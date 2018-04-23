@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="colorAccentDark" format="reference" />
+    <attr name="cardBackgroundColorInverse" format="reference" />
+
+    <declare-styleable name="EditTextView">
+        <attr name="android:singleLine" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="MusicPlayerParentView">
+        <attr name="collapsedHeight" format="dimension" />
+    </declare-styleable>
+</resources>

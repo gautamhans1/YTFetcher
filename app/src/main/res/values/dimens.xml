@@ -1,0 +1,4 @@
+<resources>
+    <dimen name="musicview_height">56dp</dimen>
+    <dimen name="recyclerview_padding">72dp</dimen>
+</resources>

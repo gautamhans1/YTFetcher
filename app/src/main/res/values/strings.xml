@@ -1,0 +1,59 @@
+<resources>
+    <string name="app_name">YeTube</string>
+
+    <!-- Music Player -->
+    <string name="music_player">Music player</string>
+    <string name="pause">Pause</string>
+    <string name="play">Play</string>
+    <string name="stop">Stop</string>
+    <string name="no_music">No music</string>
+    <string name="loading">Loading</string>
+    <string name="failed">Failed</string>
+
+    <!-- Login -->
+    <string name="switch_login">Switch to login</string>
+    <string name="switch_signup">Switch to sign up</string>
+    <string name="server_address">Server address</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="server_empty">Server address can\'t be empty!</string>
+    <string name="username_short">Username must be at least 4 characters long!</string>
+    <string name="username_error">Username must be alphanumeric!</string>
+    <string name="password_short">Password must be at least 5 characters long!</string>
+    <string name="password_no_match">Passwords don\'t match!</string>
+    <string name="server_offline">Server is not reachable!</string>
+    <string name="username_exists">Username already exists!</string>
+    <string name="username_password_wrong">Username or password is wrong!</string>
+    <string name="not_verified">You are not verified yet. Wait for host to unlock your account.</string>
+    <string name="signup_error">Failed to sign up!</string>
+    <string name="login_error">Failed to login!</string>
+    <string name="ok">OK</string>
+
+    <!-- Home -->
+    <string name="home">Home</string>
+    <string name="popular_music">Popular music</string>
+    <string name="charts_failed">Couldn\'t load charts</string>
+    <string name="failed_song">Failed too load %s. Region lock?</string>
+
+    <!-- PlaylistNamesList -->
+    <string name="playlists">Playlists</string>
+    <string name="your_playlists">Your playlists</string>
+    <string name="name">Name</string>
+    <string name="playlist_already_exists">Playlist already exists!</string>
+    <string name="is_public">Public</string>
+    <string name="no_playlists">No playlists found</string>
+
+    <!-- Search -->
+    <string name="search">Search</string>
+    <string name="query">Query</string>
+    <string name="no_songs">No songs found</string>
+
+    <!-- Users -->
+    <string name="users">Users</string>
+    <string name="no_users">No users found</string>
+    <string name="admin">Admin</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+</resources>
