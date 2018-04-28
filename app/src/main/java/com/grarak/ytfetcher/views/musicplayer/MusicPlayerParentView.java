@@ -10,6 +10,8 @@ import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.MusicManager;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
+import java.util.List;
+
 public class MusicPlayerParentView extends FrameLayout {
 
     private MusicPlayerHeaderView headerView;
@@ -49,24 +51,24 @@ public class MusicPlayerParentView extends FrameLayout {
         headerView.setVisibility(collapsed ? VISIBLE : INVISIBLE);
     }
 
-    public void onFetch(YoutubeSearchResult result) {
-        headerView.onFetch(result);
-        playerView.onFetch(result);
+    public void onFetch(List<YoutubeSearchResult> results, int position) {
+        headerView.onFetch(results, position);
+        playerView.onFetch(results, position);
     }
 
-    public void onFailure(YoutubeSearchResult result) {
-        headerView.onFailure(result);
-        playerView.onFailure(result);
+    public void onFailure(List<YoutubeSearchResult> results, int position) {
+        headerView.onFailure(results, position);
+        playerView.onFailure(results, position);
     }
 
-    public void onPlay(YoutubeSearchResult result) {
-        headerView.onPlay(result);
-        playerView.onPlay(result);
+    public void onPlay(List<YoutubeSearchResult> results, int position) {
+        headerView.onPlay(results, position);
+        playerView.onPlay(results, position);
     }
 
-    public void onPause(YoutubeSearchResult result) {
-        headerView.onPause(result);
-        playerView.onPause(result);
+    public void onPause(List<YoutubeSearchResult> results, int position) {
+        headerView.onPause(results, position);
+        playerView.onPause(results, position);
     }
 
     public void onNoMusic() {

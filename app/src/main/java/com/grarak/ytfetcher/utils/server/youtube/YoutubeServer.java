@@ -33,6 +33,12 @@ public class YoutubeServer extends Server {
         void onFailure(int code);
     }
 
+    public interface YoutubeResultCallback {
+        void onSuccess(YoutubeSearchResult result);
+
+        void onFailure(int code);
+    }
+
     public YoutubeServer(Context context) {
         super(Settings.getServerUrl(context));
     }
@@ -60,13 +66,13 @@ public class YoutubeServer extends Server {
             @Override
             public void onSuccess(Request request, int status, String response) {
                 if (status == HttpURLConnection.HTTP_OK) {
-                    try {
-                        Type listType = new TypeToken<List<YoutubeSearchResult>>() {
-                        }.getType();
-                        List<YoutubeSearchResult> results =
-                                new GsonBuilder().create().fromJson(response, listType);
+                    Type listType = new TypeToken<List<YoutubeSearchResult>>() {
+                    }.getType();
+                    List<YoutubeSearchResult> results =
+                            new GsonBuilder().create().fromJson(response, listType);
+                    if (results != null) {
                         youtubeResultsCallback.onSuccess(results);
-                    } catch (Exception ignored) {
+                    } else {
                         youtubeResultsCallback.onFailure(Status.ServerOffline);
                     }
                 } else {
@@ -100,6 +106,29 @@ public class YoutubeServer extends Server {
             @Override
             public void onFailure(Request request, Exception e) {
                 youtubeChartsCallback.onFailure(Status.ServerOffline);
+            }
+        });
+    }
+
+    public void getInfo(Youtube youtube, YoutubeResultCallback youtubeResultCallback) {
+        post(getUrl("youtube/getinfo"), youtube.toString(), new Request.RequestCallback() {
+            @Override
+            public void onSuccess(Request request, int status, String response) {
+                if (status == HttpURLConnection.HTTP_OK) {
+                    YoutubeSearchResult result = YoutubeSearchResult.fromString(response);
+                    if (result != null) {
+                        youtubeResultCallback.onSuccess(result);
+                    } else {
+                        youtubeResultCallback.onFailure(Status.ServerOffline);
+                    }
+                } else {
+                    youtubeResultCallback.onFailure(parseStatusCode(response));
+                }
+            }
+
+            @Override
+            public void onFailure(Request request, Exception e) {
+                youtubeResultCallback.onFailure(Status.ServerOffline);
             }
         });
     }

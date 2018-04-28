@@ -21,6 +21,10 @@ import com.grarak.ytfetcher.utils.server.youtube.Youtube;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeServer;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class MusicPlayerService extends Service
         implements AudioManager.OnAudioFocusChangeListener,
         ExoPlayerWrapper.OnCompletionListener, ExoPlayerWrapper.OnErrorListener {
@@ -30,7 +34,6 @@ public class MusicPlayerService extends Service
     public static final String ACTION_MUSIC_PLAY_PAUSE = NAME + ".ACTION.MUSIC_PLAY_PAUSE";
 
     private boolean isBounded;
-
     private MusicPlayerBinder binder = new MusicPlayerBinder();
 
     private YoutubeServer server;
@@ -45,10 +48,11 @@ public class MusicPlayerService extends Service
     private boolean resumeOnFocusGain;
 
     private final Object trackLock = new Object();
-    private YoutubeSearchResult currentTrack;
+    private List<YoutubeSearchResult> tracks = new ArrayList<>();
+    private User user;
+    private int currentTrackPosition = -1;
+    private int preparingTrackPositon = -1;
     private long lastMusicPosition;
-
-    private YoutubeSearchResult preparingTrack;
 
     public class MusicPlayerBinder extends Binder {
         public MusicPlayerService getService() {
@@ -75,14 +79,30 @@ public class MusicPlayerService extends Service
         }
     };
 
-    public synchronized void playMusic(User user, YoutubeSearchResult result) {
+    public void playMusic(User user, YoutubeSearchResult result) {
+        playMusic(user, Collections.singletonList(result), 0);
+    }
+
+    public synchronized void playMusic(User user, List<YoutubeSearchResult> results, int position) {
         pauseMusic();
         server.close();
 
-        preparingTrack = result;
-        if (listener != null) {
-            listener.onFetchingSong(result);
+        synchronized (trackLock) {
+            this.user = user;
+            currentTrackPosition = -1;
+            preparingTrackPositon = position;
+            lastMusicPosition = 0;
+            if (tracks != results) {
+                tracks.clear();
+                tracks.addAll(results);
+            }
         }
+
+        if (listener != null) {
+            listener.onFetchingSong(tracks, position);
+        }
+
+        YoutubeSearchResult result = tracks.get(position);
 
         Youtube youtube = new Youtube();
         youtube.apikey = user.apikey;
@@ -96,17 +116,21 @@ public class MusicPlayerService extends Service
                 exoPlayer.setDataSource(url);
                 exoPlayer.setOnPreparedListener(exoPlayer -> {
                     synchronized (trackLock) {
-                        currentTrack = result;
-                        lastMusicPosition = 0;
+                        preparingTrackPositon = -1;
+                        currentTrackPosition = position;
+                        requestAudioFocus();
                     }
-                    requestAudioFocus();
                 });
             }
 
             @Override
             public void onFailure(int code) {
                 if (listener != null) {
-                    listener.onFailure(result);
+                    listener.onFailure(results, position);
+                }
+                synchronized (trackLock) {
+                    currentTrackPosition = -1;
+                    preparingTrackPositon = -1;
                 }
                 notification.showFailure(result);
             }
@@ -119,29 +143,29 @@ public class MusicPlayerService extends Service
 
     private void playMusic() {
         synchronized (trackLock) {
-            if (currentTrack == null) {
+            if (currentTrackPosition < 0) {
                 return;
             }
             if (listener != null) {
-                listener.onPlay(currentTrack);
+                listener.onPlay(tracks, currentTrackPosition);
             }
             seekTo(lastMusicPosition);
             exoPlayer.play();
-            notification.showPlay(currentTrack);
+            notification.showPlay(tracks.get(currentTrackPosition));
         }
     }
 
     public void pauseMusic() {
         synchronized (trackLock) {
-            if (listener != null && currentTrack != null) {
-                listener.onPause(currentTrack);
+            if (listener != null && currentTrackPosition >= 0) {
+                listener.onPause(tracks, currentTrackPosition);
             }
             lastMusicPosition = getCurrentPosition();
             exoPlayer.pause();
             notification.showPause();
-        }
-        synchronized (focusLock) {
-            resumeOnFocusGain = false;
+            synchronized (focusLock) {
+                resumeOnFocusGain = false;
+            }
         }
     }
 
@@ -154,12 +178,18 @@ public class MusicPlayerService extends Service
         return exoPlayer.isPlaying();
     }
 
-    public YoutubeSearchResult getCurrentTrack() {
-        return currentTrack;
+    public int getCurrentTrackPosition() {
+        return currentTrackPosition;
     }
 
-    public YoutubeSearchResult getPreparingTrack() {
-        return preparingTrack;
+    public int getPreparingTrackPositon() {
+        return preparingTrackPositon;
+    }
+
+    public List<YoutubeSearchResult> getTracks() {
+        synchronized (trackLock) {
+            return Collections.unmodifiableList(tracks);
+        }
     }
 
     public long getCurrentPosition() {
@@ -171,7 +201,9 @@ public class MusicPlayerService extends Service
     }
 
     public boolean isPreparing() {
-        return exoPlayer.isPreparing();
+        synchronized (trackLock) {
+            return preparingTrackPositon >= 0 || exoPlayer.isPreparing();
+        }
     }
 
     private void requestAudioFocus() {
@@ -199,21 +231,35 @@ public class MusicPlayerService extends Service
     @Override
     public void onCompletion(ExoPlayerWrapper exoPlayer) {
         pauseMusic();
+        boolean play = false;
+        synchronized (trackLock) {
+            lastMusicPosition = 0;
+            if (currentTrackPosition >= 0
+                    && currentTrackPosition + 1 < tracks.size()
+                    && user != null) {
+                play = true;
+            }
+        }
+        if (play) {
+            playMusic(user, tracks, currentTrackPosition + 1);
+        }
     }
 
     @Override
     public void onError(ExoPlayerWrapper exoPlayer, ExoPlaybackException error) {
         synchronized (trackLock) {
-            if (preparingTrack != null) {
+            if (preparingTrackPositon >= 0) {
                 if (listener != null) {
-                    listener.onFailure(preparingTrack);
+                    listener.onFailure(tracks, preparingTrackPositon);
                 }
-                notification.showFailure(preparingTrack);
-            } else if (currentTrack != null) {
+                notification.showFailure(tracks.get(preparingTrackPositon));
+                preparingTrackPositon = -1;
+            } else if (currentTrackPosition >= 0) {
                 if (listener != null) {
-                    listener.onFailure(currentTrack);
+                    listener.onFailure(tracks, currentTrackPosition);
                 }
-                notification.showFailure(currentTrack);
+                notification.showFailure(tracks.get(currentTrackPosition));
+                currentTrackPosition = -1;
             }
         }
     }
@@ -260,6 +306,7 @@ public class MusicPlayerService extends Service
 
         exoPlayer = new ExoPlayerWrapper(this);
         exoPlayer.setOnCompletionListener(this);
+        exoPlayer.setOnErrorListener(this);
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setContentType(C.CONTENT_TYPE_MUSIC)
                 .setUsage(C.USAGE_MEDIA).build();

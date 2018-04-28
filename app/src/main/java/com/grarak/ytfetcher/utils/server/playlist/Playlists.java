@@ -13,13 +13,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class PlaylistNamesList extends Gson implements Iterable<PlaylistName> {
+public class Playlists extends Gson implements Iterable<Playlist> {
 
-    public List<PlaylistName> items = new ArrayList<>();
+    public List<Playlist> items = new ArrayList<>();
 
-    PlaylistNamesList(String json) {
+    Playlists(String json) {
         try {
-            Type listType = new TypeToken<List<PlaylistName>>() {
+            Type listType = new TypeToken<List<Playlist>>() {
             }.getType();
             items.addAll(new GsonBuilder().create().fromJson(json, listType));
         } catch (Exception ignored) {
@@ -35,13 +35,13 @@ public class PlaylistNamesList extends Gson implements Iterable<PlaylistName> {
         Prefs.saveString("playlists", toString(), context);
     }
 
-    public static PlaylistNamesList restore(Context context) {
-        return new PlaylistNamesList(Prefs.getString("playlists", null, context));
+    public static Playlists restore(Context context) {
+        return new Playlists(Prefs.getString("playlists", null, context));
     }
 
     @NonNull
     @Override
-    public Iterator<PlaylistName> iterator() {
+    public Iterator<Playlist> iterator() {
         return items.iterator();
     }
 }

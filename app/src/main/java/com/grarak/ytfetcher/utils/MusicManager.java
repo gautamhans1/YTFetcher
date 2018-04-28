@@ -11,6 +11,9 @@ import com.grarak.ytfetcher.service.MusicPlayerService;
 import com.grarak.ytfetcher.utils.server.user.User;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MusicManager {
 
     private Context context;
@@ -68,6 +71,14 @@ public class MusicManager {
         }
     }
 
+    public void play(List<YoutubeSearchResult> results, int positon) {
+        synchronized (this) {
+            if (service != null) {
+                service.playMusic(user, results, positon);
+            }
+        }
+    }
+
     public void resume() {
         synchronized (this) {
             if (service != null) {
@@ -101,22 +112,31 @@ public class MusicManager {
         return false;
     }
 
-    public YoutubeSearchResult getCurrentTrack() {
+    public int getCurrentTrackPosition() {
         synchronized (this) {
             if (service != null) {
-                return service.getCurrentTrack();
+                return service.getCurrentTrackPosition();
             }
         }
-        return null;
+        return -1;
     }
 
-    public YoutubeSearchResult getPreparingTrack() {
+    public int getPreparingTrackPositon() {
         synchronized (this) {
             if (service != null) {
-                return service.getPreparingTrack();
+                return service.getPreparingTrackPositon();
             }
         }
-        return null;
+        return -1;
+    }
+
+    public List<YoutubeSearchResult> getTracks() {
+        synchronized (this) {
+            if (service != null) {
+                return service.getTracks();
+            }
+        }
+        return new ArrayList<>();
     }
 
     public long getCurrentPosition() {

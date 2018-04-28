@@ -2,10 +2,13 @@ package com.grarak.ytfetcher.views.recyclerview;
 
 import android.support.annotation.NonNull;
 import android.support.v7.widget.AppCompatImageView;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -17,7 +20,7 @@ import java.util.List;
 public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        private final AppCompatImageView thumbnail;
+        private final ImageView thumbnail;
         private final TextView title;
         private final TextView summary;
         private final AppCompatImageView menu;
@@ -32,12 +35,18 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
         }
     }
 
-    private YoutubeSearchResult result;
-    private View.OnClickListener onClickListener;
+    public interface MusicListener {
+        void onClick(MusicItem musicItem);
 
-    public MusicItem(YoutubeSearchResult result, View.OnClickListener onClickListener) {
+        void onAddPlaylist(MusicItem musicItem);
+    }
+
+    private YoutubeSearchResult result;
+    private MusicListener musicListener;
+
+    public MusicItem(YoutubeSearchResult result, MusicListener musicListener) {
         this.result = result;
-        this.onClickListener = onClickListener;
+        this.musicListener = musicListener;
     }
 
     @Override
@@ -47,18 +56,37 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
 
     @Override
     protected ViewHolder createViewHolder(View inflatedView) {
-        return new ViewHolder(inflatedView);
+        return null;
     }
 
     @Override
     protected void bindViewHolder(ViewHolder viewHolder) {
-        viewHolder.itemView.setOnClickListener(onClickListener);
+        viewHolder.itemView.setOnClickListener(v -> musicListener.onClick(this));
+        viewHolder.itemView.setOnLongClickListener(v -> {
+            viewHolder.menu.performClick();
+            return true;
+        });
         viewHolder.title.setText(result.title);
         viewHolder.summary.setText(result.duration);
 
         Glide.with(viewHolder.thumbnail)
                 .load(result.thumbnail)
                 .into(viewHolder.thumbnail);
+
+        viewHolder.menu.setOnClickListener(v -> {
+            PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
+            Menu menu = popupMenu.getMenu();
+            menu.add(0, 0, 0, R.string.add_playlist);
+            popupMenu.setOnMenuItemClickListener(item -> {
+                switch (item.getItemId()) {
+                    case 0:
+                        musicListener.onAddPlaylist(this);
+                        return true;
+                }
+                return false;
+            });
+            popupMenu.show();
+        });
     }
 
     public static class MusicAdapter extends RecyclerViewAdapter<ViewHolder> {
@@ -76,8 +104,8 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int position) {
             return new ViewHolder(LayoutInflater.from(
                     parent.getContext()).inflate(
-                    grid ? R.layout.item_music_thumbnail_grid :
-                            R.layout.item_music_thumbnail, parent, false));
+                    grid ? R.layout.item_music_grid :
+                            R.layout.item_music, parent, false));
         }
 
         @Override

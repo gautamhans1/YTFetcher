@@ -16,8 +16,8 @@ public class TitleFragment extends BaseFragment {
     private TextView titleView;
     private CharSequence title;
 
-    protected @LayoutRes
-    int getLayoutXml() {
+    @LayoutRes
+    protected int getLayoutXml() {
         return R.layout.fragment_title;
     }
 
@@ -28,7 +28,9 @@ public class TitleFragment extends BaseFragment {
                              @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(getLayoutXml(), container, false);
         titleView = rootView.findViewById(R.id.title);
-        titleView.setText(title);
+        if (titleView != null) {
+            titleView.setText(title);
+        }
         return rootView;
     }
 

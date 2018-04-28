@@ -76,8 +76,18 @@ public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, A
                 dismissProgress();
                 clearItems();
 
-                for (YoutubeSearchResult youtubeSearchResult : youtubeSearchResults) {
-                    addItem(new MusicItem(youtubeSearchResult, v -> playTrack(youtubeSearchResult)));
+                for (YoutubeSearchResult result : youtubeSearchResults) {
+                    addItem(new MusicItem(result, new MusicItem.MusicListener() {
+                        @Override
+                        public void onClick(MusicItem musicItem) {
+                            getMusicManager().play(result);
+                        }
+
+                        @Override
+                        public void onAddPlaylist(MusicItem musicItem) {
+                            showPlaylistDialog(result);
+                        }
+                    }));
                 }
             }
 

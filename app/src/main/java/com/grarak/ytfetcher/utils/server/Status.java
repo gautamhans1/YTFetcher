@@ -20,7 +20,7 @@ public class Status {
     public static final int YoutubeGetFailure = 13;
     public static final int YoutubeGetInfoFailure = 14;
     public static final int YoutubeGetChartsFailure = 15;
-    public static final int PlaylistAlreadyExists = 16;
+    public static final int PlaylistIdAlreadyExists = 16;
     public static final int AddHistoryFailed = 17;
 
     public static Integer getStatusCode(String json) {

@@ -2,14 +2,18 @@ package com.grarak.ytfetcher.views.musicplayer;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.AppCompatSeekBar;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -20,11 +24,13 @@ import com.grarak.ytfetcher.utils.MusicManager;
 import com.grarak.ytfetcher.utils.Utils;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MusicPlayerView extends LinearLayout {
 
-    private AppCompatImageView thumbnailView;
+    private ViewPager viewPager;
     private TextView titleView;
     private TextView positionTextView;
     private AppCompatSeekBar seekBar;
@@ -39,6 +45,8 @@ public class MusicPlayerView extends LinearLayout {
     private Drawable playDrawable;
     private Drawable pauseDrawable;
 
+    private Adapter adapter;
+    private final List<YoutubeSearchResult> tracks = new ArrayList<>();
     private long duration;
     private AtomicBoolean playing = new AtomicBoolean();
 
@@ -55,7 +63,7 @@ public class MusicPlayerView extends LinearLayout {
 
         LayoutInflater.from(context).inflate(R.layout.view_music_player, this);
 
-        thumbnailView = findViewById(R.id.thumbnail);
+        viewPager = findViewById(R.id.viewpager);
         titleView = findViewById(R.id.title);
         positionTextView = findViewById(R.id.position_text);
         seekBar = findViewById(R.id.seekbar);
@@ -76,19 +84,10 @@ public class MusicPlayerView extends LinearLayout {
             }
         });
 
-        previousView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
-
-        nextView.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
+        previousView.setOnClickListener(v ->
+                viewPager.setCurrentItem(viewPager.getCurrentItem() - 1, true));
+        nextView.setOnClickListener(v ->
+                viewPager.setCurrentItem(viewPager.getCurrentItem() + 1, true));
 
         seekBar.setClickable(true);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -109,8 +108,15 @@ public class MusicPlayerView extends LinearLayout {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 musicManager.seekTo(seekBar.getProgress() * 1000);
+                if (playing.get()) {
+                    startCounter();
+                }
             }
         });
+
+        viewPager.setAdapter(adapter = new Adapter());
+        viewPager.setPageMargin(getResources()
+                .getDimensionPixelOffset(R.dimen.viewpager_page_margin));
     }
 
     @Override
@@ -153,44 +159,93 @@ public class MusicPlayerView extends LinearLayout {
         }
     };
 
+    private class Adapter extends PagerAdapter {
+        @Override
+        public int getCount() {
+            return tracks.size();
+        }
+
+        @NonNull
+        @Override
+        public Object instantiateItem(@NonNull ViewGroup container, int position) {
+            synchronized (tracks) {
+                AppCompatImageView imageView = new AppCompatImageView(getContext());
+                Glide.with(imageView).load(tracks.get(position).thumbnail).into(imageView);
+                container.addView(imageView, 0);
+                return imageView;
+            }
+        }
+
+        @Override
+        public void destroyItem(@NonNull ViewGroup container, int position, @NonNull Object object) {
+            container.removeView((View) object);
+        }
+
+        @Override
+        public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
+            return view == object;
+        }
+    }
+
     void setMusicManager(MusicManager musicManager) {
         this.musicManager = musicManager;
     }
 
-    void onFetch(YoutubeSearchResult result) {
+    private ViewPager.SimpleOnPageChangeListener onPageChangeListener = new ViewPager.SimpleOnPageChangeListener() {
+        @Override
+        public void onPageSelected(int position) {
+            super.onPageSelected(position);
+            musicManager.play(tracks, position);
+        }
+    };
+
+    private void setViewPager(List<YoutubeSearchResult> results, int position) {
+        synchronized (tracks) {
+            tracks.clear();
+            tracks.addAll(results);
+            viewPager.setAdapter(adapter);
+            viewPager.removeOnPageChangeListener(onPageChangeListener);
+            viewPager.setCurrentItem(position);
+            titleView.setText(results.get(position).title);
+            viewPager.addOnPageChangeListener(onPageChangeListener);
+        }
+    }
+
+    void onFetch(List<YoutubeSearchResult> results, int position) {
         stopCounter();
-        Glide.with(this).load(result.thumbnail).into(thumbnailView);
-        titleView.setText(result.title);
+        setViewPager(results, position);
         controls.setVisibility(INVISIBLE);
+        seekBar.setVisibility(INVISIBLE);
         progressView.setVisibility(VISIBLE);
         positionTextView.setText("");
         seekBar.setProgress(0);
         playing.set(false);
     }
 
-    void onFailure(YoutubeSearchResult result) {
+    void onFailure(List<YoutubeSearchResult> results, int position) {
         stopCounter();
         playing.set(false);
     }
 
-    void onPlay(YoutubeSearchResult result) {
-        Glide.with(this).load(result.thumbnail).into(thumbnailView);
-        titleView.setText(result.title);
+    void onPlay(List<YoutubeSearchResult> results, int position) {
+        setViewPager(results, position);
         controls.setVisibility(VISIBLE);
+        seekBar.setVisibility(VISIBLE);
         progressView.setVisibility(INVISIBLE);
         playPauseView.setImageDrawable(pauseDrawable);
         playing.set(true);
         counter.run();
     }
 
-    void onPause(YoutubeSearchResult result) {
+    void onPause(List<YoutubeSearchResult> results, int position) {
         stopCounter();
-        Glide.with(this).load(result.thumbnail).into(thumbnailView);
-        titleView.setText(result.title);
+        setViewPager(results, position);
         controls.setVisibility(VISIBLE);
+        seekBar.setVisibility(VISIBLE);
         progressView.setVisibility(INVISIBLE);
         playPauseView.setImageDrawable(playDrawable);
         playing.set(false);
+        counter.run();
     }
 
     void onNoMusic() {

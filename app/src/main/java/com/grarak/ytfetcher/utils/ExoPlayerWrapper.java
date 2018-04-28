@@ -140,9 +140,11 @@ public class ExoPlayerWrapper implements Player.EventListener {
                 }
                 break;
             case Player.STATE_ENDED:
-                setState(State.IDLE);
-                if (onCompletionListener != null) {
-                    onCompletionListener.onCompletion(this);
+                if (getDuration() == 0 || getCurrentPosition() != 0) {
+                    setState(State.IDLE);
+                    if (onCompletionListener != null) {
+                        onCompletionListener.onCompletion(this);
+                    }
                 }
                 break;
         }

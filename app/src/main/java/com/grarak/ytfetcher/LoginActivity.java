@@ -118,7 +118,6 @@ public class LoginActivity extends BaseActivity {
                 @Override
                 public void onFailure(int code) {
                     hideProgress();
-
                     if (code == Status.UserAlreadyExists) {
                         Utils.toast(R.string.username_exists, LoginActivity.this);
                     } else if (code == Status.InvalidPassword) {

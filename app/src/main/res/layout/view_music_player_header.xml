@@ -34,9 +34,13 @@
         android:layout_weight="1"
         android:background="?android:attr/windowBackground"
         android:gravity="center"
+        android:paddingBottom="5dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
-        android:text="@string/no_music" />
+        android:paddingTop="5dp"
+        android:text="@string/no_music"
+        app:autoSizeMaxTextSize="16sp"
+        app:autoSizeTextType="uniform" />
 
     <android.support.v7.widget.AppCompatImageView
         android:id="@+id/thumbnail"

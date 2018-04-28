@@ -9,6 +9,7 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +21,7 @@ import com.grarak.ytfetcher.views.recyclerview.RecyclerViewAdapter;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, TF extends BaseFragment>
@@ -41,8 +43,8 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
     private TF titleFragment;
     private View titleContent;
 
-    protected @LayoutRes
-    int getLayoutXml() {
+    @LayoutRes
+    protected int getLayoutXml() {
         return R.layout.fragment_recyclerview;
     }
 
@@ -76,7 +78,8 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         private void setTranslations() {
             titleContent.setTranslationY(-scrollDistance / 2);
 
-            if (bottomNavigationView == null) {
+            if (bottomNavigationView == null
+                    || recyclerView.getPaddingBottom() == 0) {
                 return;
             }
             if (bottomTranslation > bottomNavigationView.getHeight()) {
@@ -91,7 +94,8 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
             super.onScrollStateChanged(recyclerView, newState);
 
-            if (bottomNavigationView == null || newState != 0 || bottomTranslation == 0) {
+            if (bottomNavigationView == null || newState != 0 || bottomTranslation == 0
+                    || recyclerView.getPaddingBottom() == 0) {
                 return;
             }
 
@@ -133,7 +137,9 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
 
         messageView = rootView.findViewById(R.id.message);
         progressView = rootView.findViewById(R.id.progress);
-        messageView.setText(getEmptyViewsMessage());
+        if (messageView != null) {
+            messageView.setText(getEmptyViewsMessage());
+        }
 
         titleContent = rootView.findViewById(R.id.content_title);
         titleFragment = getTitleFragment();
@@ -149,6 +155,9 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         if (savedInstanceState != null) {
             if (savedInstanceState.getBoolean("progress_visible")) {
                 showProgress();
+                synchronized (this) {
+                    progressCount--;
+                }
             } else {
                 dismissProgress();
             }
@@ -158,12 +167,14 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         if (items.size() == 0) {
             initItems(items);
         }
-        messageView.setVisibility(
-                progressView.getVisibility() == View.INVISIBLE &&
-                        itemsSize() == 0 ? View.VISIBLE : View.INVISIBLE);
+        if (messageView != null) {
+            messageView.setVisibility(
+                    progressView.getVisibility() == View.INVISIBLE &&
+                            itemsSize() == 0 ? View.VISIBLE : View.INVISIBLE);
+        }
 
         recyclerView.setLayoutManager(layoutManager = createLayoutManager());
-        recyclerView.setAdapter(adapter = createAdapter());
+        recyclerView.setAdapter(adapter == null ? adapter = createAdapter() : adapter);
         return rootView;
     }
 
@@ -171,7 +182,8 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
     public void onViewFinished() {
         int leftPadding = recyclerView.getPaddingLeft();
         int rightPadding = recyclerView.getPaddingRight();
-        if (Utils.isLandscape(getActivity())) {
+        if (recyclerView.getPaddingBottom() != 0
+                && Utils.isLandscape(getActivity())) {
             leftPadding = getResources().getDimensionPixelSize(R.dimen.recyclerview_padding);
             rightPadding = leftPadding;
         }
@@ -187,7 +199,7 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         recyclerView.addOnScrollListener(onScrollListener);
 
         recyclerView.setOnTouchListener((v, event) -> {
-            if (progressView.getVisibility() == View.INVISIBLE) {
+            if (progressView == null || progressView.getVisibility() == View.INVISIBLE) {
                 titleContent.dispatchTouchEvent(event);
             }
             return false;
@@ -226,24 +238,30 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
     }
 
     public void showProgress() {
-        synchronized (this) {
-            progressCount++;
-            recyclerView.setVisibility(View.INVISIBLE);
-            messageView.setVisibility(View.INVISIBLE);
-            progressView.setVisibility(View.VISIBLE);
+        if (progressView != null) {
+            synchronized (this) {
+                progressCount++;
+                recyclerView.setVisibility(View.INVISIBLE);
+                messageView.setVisibility(View.INVISIBLE);
+                progressView.setVisibility(View.VISIBLE);
+                titleContent.setVisibility(View.INVISIBLE);
+            }
         }
     }
 
     public void dismissProgress() {
-        synchronized (this) {
-            progressCount--;
-            if (progressCount <= 0) {
-                recyclerView.setVisibility(View.VISIBLE);
-                messageView.setVisibility(
-                        progressView.getVisibility() == View.INVISIBLE &&
-                                itemsSize() == 0 ? View.VISIBLE : View.INVISIBLE);
-                progressView.setVisibility(View.INVISIBLE);
-                progressCount = 0;
+        if (progressView != null) {
+            synchronized (this) {
+                progressCount--;
+                if (progressCount <= 0) {
+                    recyclerView.setVisibility(View.VISIBLE);
+                    messageView.setVisibility(
+                            progressView.getVisibility() == View.INVISIBLE &&
+                                    itemsSize() == 0 ? View.VISIBLE : View.INVISIBLE);
+                    progressView.setVisibility(View.INVISIBLE);
+                    titleContent.setVisibility(View.VISIBLE);
+                    progressCount = 0;
+                }
             }
         }
     }
@@ -256,11 +274,20 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         return items.size();
     }
 
+    protected RecyclerView getRecyclerView() {
+        return recyclerView;
+    }
+
+    protected RecyclerViewAdapter<VH> getRecyclerViewAdapter() {
+        return adapter;
+    }
+
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putBoolean("progress_visible", progressView.getVisibility() == View.VISIBLE);
+        outState.putBoolean("progress_visible", progressView != null
+                && progressView.getVisibility() == View.VISIBLE);
     }
 
     @Override

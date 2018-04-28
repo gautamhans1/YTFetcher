@@ -33,7 +33,7 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
 
     public static final String USER_INTENT = MainActivity.class.getName() + ".INTENT.USER";
 
-    private List<FragmentItem> items = new ArrayList<>();
+    private final List<FragmentItem> items = new ArrayList<>();
 
     private ViewPager viewPager;
     private BottomNavigationView bottomNavigationView;
@@ -42,6 +42,8 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
 
     private MusicPlayerParentView musicPlayerView;
     private MusicManager musicManager;
+
+    private final ArrayList<String> availablePlaylists = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,8 +74,6 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
             menu.add(0, i, 0, item.title).setIcon(item.icon);
         }
 
-        onPageChanged(currentPage);
-
         musicManager = new MusicManager(this, user, this);
         musicPlayerView.setMusicManager(musicManager);
 
@@ -82,6 +82,8 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
                 slidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
                 musicPlayerView.setCollapsed(false);
             }
+            availablePlaylists.addAll(savedInstanceState
+                    .getStringArrayList("availablePlaylists"));
         }
 
         slidingUpPanelLayout.addPanelSlideListener(new SlidingUpPanelLayout.SimplePanelSlideListener() {
@@ -94,6 +96,14 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
         });
 
         slidingUpPanelLayout.post(() -> slidingUpPanelLayout.getChildAt(1).setOnClickListener(null));
+
+        Fragment foregroundFragment = getSupportFragmentManager()
+                .findFragmentByTag("foreground_fragment");
+        if (foregroundFragment != null) {
+            showForegroundFragment(foregroundFragment);
+        }
+
+        viewPager.post(() -> onPageChanged(currentPage));
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener onNavigationItemSelectedListener =
@@ -145,6 +155,20 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
         return null;
     }
 
+    public void showForegroundFragment(Fragment fragment) {
+        getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(R.anim.right_in, R.anim.right_out)
+                .replace(R.id.foreground_content, fragment, "foreground_fragment")
+                .commit();
+    }
+
+    public void removeForegroundFragment(Fragment fragment) {
+        getSupportFragmentManager().beginTransaction()
+                .setCustomAnimations(R.anim.right_in, R.anim.right_out)
+                .remove(fragment)
+                .commit();
+    }
+
     @Override
     public void onBackPressed() {
         if (slidingUpPanelLayout.getPanelState() ==
@@ -153,12 +177,18 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
             return;
         }
 
-        Fragment fragment = getViewPagerFragment(items.get(currentPage));
-        if (fragment instanceof BaseFragment) {
-            if (!((BaseFragment) fragment).onBackPressed()) {
-                super.onBackPressed();
-            }
+        Fragment foregroundFragment = getSupportFragmentManager()
+                .findFragmentByTag("foreground_fragment");
+        if (foregroundFragment != null) {
+            removeForegroundFragment(foregroundFragment);
+            return;
         }
+
+        Fragment fragment = getViewPagerFragment(items.get(currentPage));
+        if (fragment instanceof BaseFragment && ((BaseFragment) fragment).onBackPressed()) {
+            return;
+        }
+        super.onBackPressed();
     }
 
     public BottomNavigationView getBottomNavigationView() {
@@ -170,7 +200,11 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
         super.onSaveInstanceState(outState);
 
         outState.putBoolean("panel_visible",
-                slidingUpPanelLayout.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED);
+                slidingUpPanelLayout.getPanelState() ==
+                        SlidingUpPanelLayout.PanelState.EXPANDED);
+        synchronized (availablePlaylists) {
+            outState.putStringArrayList("availablePlaylists", availablePlaylists);
+        }
     }
 
     @Override
@@ -186,19 +220,35 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
         musicManager.onPause();
     }
 
-    public void playTrack(YoutubeSearchResult youtubeSearchResult) {
-        musicManager.play(youtubeSearchResult);
+    public MusicManager getMusicManager() {
+        return musicManager;
+    }
+
+    public void setAvailablePlaylists(List<String> playlists) {
+        synchronized (availablePlaylists) {
+            availablePlaylists.clear();
+            availablePlaylists.addAll(playlists);
+        }
+    }
+
+    public List<String> getAvailablePlaylists() {
+        synchronized (availablePlaylists) {
+            return new ArrayList<>(availablePlaylists);
+        }
     }
 
     @Override
     public void onConnected() {
         slidingUpPanelLayout.setTouchEnabled(true);
         if (musicManager.isPlaying()) {
-            musicPlayerView.onPlay(musicManager.getCurrentTrack());
+            musicPlayerView.onPlay(
+                    musicManager.getTracks(), musicManager.getCurrentTrackPosition());
         } else if (musicManager.isPreparing()) {
-            musicPlayerView.onFetch(musicManager.getPreparingTrack());
-        } else if (musicManager.getCurrentTrack() != null) {
-            musicPlayerView.onPause(musicManager.getCurrentTrack());
+            musicPlayerView.onFetch(
+                    musicManager.getTracks(), musicManager.getPreparingTrackPositon());
+        } else if (musicManager.getCurrentTrackPosition() >= 0) {
+            musicPlayerView.onPause(
+                    musicManager.getTracks(), musicManager.getCurrentTrackPosition());
         } else {
             musicPlayerView.onNoMusic();
             slidingUpPanelLayout.setPanelState(
@@ -208,26 +258,26 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
     }
 
     @Override
-    public void onFetchingSong(YoutubeSearchResult result) {
-        musicPlayerView.onFetch(result);
+    public void onFetchingSong(List<YoutubeSearchResult> results, int position) {
+        musicPlayerView.onFetch(results, position);
         slidingUpPanelLayout.setTouchEnabled(true);
     }
 
     @Override
-    public void onFailure(YoutubeSearchResult result) {
-        musicPlayerView.onFailure(result);
+    public void onFailure(List<YoutubeSearchResult> results, int position) {
+        musicPlayerView.onFailure(results, position);
         slidingUpPanelLayout.setTouchEnabled(true);
     }
 
     @Override
-    public void onPlay(YoutubeSearchResult result) {
-        musicPlayerView.onPlay(result);
+    public void onPlay(List<YoutubeSearchResult> results, int position) {
+        musicPlayerView.onPlay(results, position);
         slidingUpPanelLayout.setTouchEnabled(true);
     }
 
     @Override
-    public void onPause(YoutubeSearchResult result) {
-        musicPlayerView.onPause(result);
+    public void onPause(List<YoutubeSearchResult> results, int position) {
+        musicPlayerView.onPause(results, position);
         slidingUpPanelLayout.setTouchEnabled(true);
     }
 
@@ -264,10 +314,10 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
     private static class FragmentItem {
 
         private Class<? extends Fragment> fragmentClass;
-        private @DrawableRes
-        int icon;
-        private @StringRes
-        int title;
+        @DrawableRes
+        private int icon;
+        @StringRes
+        private int title;
 
         private FragmentItem(Class<? extends Fragment> fragmentClass,
                              @DrawableRes int icon, @StringRes int title) {

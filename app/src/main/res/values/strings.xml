@@ -35,14 +35,18 @@
     <string name="popular_music">Popular music</string>
     <string name="charts_failed">Couldn\'t load charts</string>
     <string name="failed_song">Failed too load %s. Region lock?</string>
+    <string name="add_playlist">Add to playlist</string>
+    <string name="already_in_playlist">Already in playlist</string>
+    <string name="failed_add_playlist">Failed to add to playlist</string>
 
-    <!-- PlaylistNamesList -->
+    <!-- Playlists -->
     <string name="playlists">Playlists</string>
     <string name="your_playlists">Your playlists</string>
     <string name="name">Name</string>
     <string name="playlist_already_exists">Playlist already exists!</string>
     <string name="is_public">Public</string>
     <string name="no_playlists">No playlists found</string>
+    <string name="delete">Delete</string>
 
     <!-- Search -->
     <string name="search">Search</string>

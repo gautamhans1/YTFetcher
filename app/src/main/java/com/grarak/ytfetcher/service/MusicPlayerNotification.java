@@ -66,7 +66,7 @@ public class MusicPlayerNotification {
                     new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
                             .setContentTitle(service.getString(R.string.loading))
                             .setContentText(result.title)
-                            .setSmallIcon(R.mipmap.ic_launcher)
+                            .setSmallIcon(R.drawable.ic_bookmark_music)
                             .setProgress(0, 0, true);
             service.startForeground(NOTIFICATION_ID, builder.build());
         });
@@ -81,7 +81,7 @@ public class MusicPlayerNotification {
                     new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
                             .setContentTitle(service.getString(R.string.failed))
                             .setContentText(result.title)
-                            .setSmallIcon(R.mipmap.ic_launcher);
+                            .setSmallIcon(R.drawable.ic_bookmark_music);
             service.startForeground(NOTIFICATION_ID, builder.build());
         });
     }
@@ -158,7 +158,7 @@ public class MusicPlayerNotification {
                         .setContentTitle(title)
                         .setContentText(contentText)
                         .setSubText(result.duration)
-                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setSmallIcon(R.drawable.ic_bookmark_music)
                         .setLargeIcon(bitmap)
                         .setContentIntent(contentIntent)
                         .setDeleteIntent(getBoardcast(MusicPlayerService.ACTION_MUSIC_PLAYER_STOP))

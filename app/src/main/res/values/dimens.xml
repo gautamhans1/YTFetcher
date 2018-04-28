@@ -1,4 +1,6 @@
 <resources>
     <dimen name="musicview_height">56dp</dimen>
     <dimen name="recyclerview_padding">72dp</dimen>
+    <dimen name="fab_margin">0dp</dimen>
+    <dimen name="viewpager_page_margin">25dp</dimen>
 </resources>

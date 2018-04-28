@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Request implements Closeable {
 
@@ -22,6 +23,7 @@ public class Request implements Closeable {
 
     private HttpURLConnection connection;
     private Handler handler;
+    private AtomicBoolean closed = new AtomicBoolean();
 
     Request() {
         handler = new Handler(Looper.getMainLooper());
@@ -29,12 +31,13 @@ public class Request implements Closeable {
 
     void doRequest(String url, String contentType,
                    String data, RequestCallback requestCallback) {
+        closed.set(false);
         BufferedReader reader = null;
         DataOutputStream outputStream = null;
 
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
-            connection.setConnectTimeout(30000);
+            connection.setConnectTimeout(5000);
             if (contentType != null) {
                 connection.setRequestProperty("Content-Type", contentType);
             }
@@ -66,9 +69,11 @@ public class Request implements Closeable {
                     return;
             }
 
-            InputStream inputStream = connection.getInputStream();
+            InputStream inputStream;
             if (statusCode < 200 || statusCode >= 300) {
                 inputStream = connection.getErrorStream();
+            } else {
+                inputStream = connection.getInputStream();
             }
             reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder response = new StringBuilder();
@@ -78,7 +83,9 @@ public class Request implements Closeable {
             }
             handler.post(() -> requestCallback.onSuccess(this, statusCode, response.toString()));
         } catch (IOException e) {
-            handler.post(() -> requestCallback.onFailure(this, e));
+            if (!closed.get()) {
+                handler.post(() -> requestCallback.onFailure(this, e));
+            }
         } finally {
             connection.disconnect();
 
@@ -99,6 +106,7 @@ public class Request implements Closeable {
 
     @Override
     public void close() {
+        closed.set(true);
         if (connection != null) {
             connection.disconnect();
         }

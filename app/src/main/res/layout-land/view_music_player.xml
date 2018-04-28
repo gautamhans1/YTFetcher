@@ -5,13 +5,14 @@
     android:layout_height="match_parent"
     android:orientation="horizontal">
 
-    <android.support.v7.widget.AppCompatImageView
-        android:id="@+id/thumbnail"
+    <android.support.v4.view.ViewPager
+        android:id="@+id/viewpager"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:padding="100dp"
-        android:scaleType="fitCenter" />
+        android:clipToPadding="false"
+        android:paddingLeft="50dp"
+        android:paddingRight="50dp" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -64,10 +65,11 @@
 
                     <android.support.v7.widget.AppCompatImageView
                         android:id="@+id/previous_btn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
                         android:layout_gravity="center"
                         android:background="?attr/selectableItemBackgroundBorderless"
+                        android:padding="13dp"
                         android:rotation="180"
                         app:srcCompat="@drawable/ic_skip"
                         app:tint="?android:attr/textColorSecondary" />
@@ -77,7 +79,7 @@
                     android:id="@+id/play_pause_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_margin="16dp"
+                    android:layout_margin="@dimen/fab_margin"
                     android:tint="@android:color/white"
                     app:fabSize="normal"
                     app:srcCompat="@drawable/ic_play" />
@@ -89,10 +91,11 @@
 
                     <android.support.v7.widget.AppCompatImageView
                         android:id="@+id/next_btn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
                         android:layout_gravity="center"
                         android:background="?attr/selectableItemBackgroundBorderless"
+                        android:padding="13dp"
                         app:srcCompat="@drawable/ic_skip"
                         app:tint="?android:attr/textColorSecondary" />
                 </FrameLayout>

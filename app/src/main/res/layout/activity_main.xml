@@ -24,7 +24,13 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:background="@color/semi_transparent"
-            android:theme="@style/AppThemeDark" />
+            android:theme="@style/AppThemeDark"
+            app:elevation="0dp" />
+
+        <FrameLayout
+            android:id="@+id/foreground_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
     </FrameLayout>
 
     <com.grarak.ytfetcher.views.musicplayer.MusicPlayerParentView

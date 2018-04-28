@@ -17,6 +17,8 @@ import com.grarak.ytfetcher.utils.MusicManager;
 import com.grarak.ytfetcher.utils.Utils;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
+import java.util.List;
+
 public class MusicPlayerHeaderView extends LinearLayout {
 
     private MusicManager musicManager;
@@ -66,30 +68,30 @@ public class MusicPlayerHeaderView extends LinearLayout {
         this.musicManager = musicManager;
     }
 
-    void onFetch(YoutubeSearchResult result) {
-        onPlay(result);
+    void onFetch(List<YoutubeSearchResult> results, int position) {
+        onPlay(results, position);
         playPauseView.setVisibility(INVISIBLE);
         progressView.setVisibility(VISIBLE);
     }
 
-    void onFailure(YoutubeSearchResult result) {
+    void onFailure(List<YoutubeSearchResult> results, int position) {
         onNoMusic();
         Utils.toast(getResources().getString(
-                R.string.failed_song, result.title), this.getContext());
+                R.string.failed_song, results.get(position).title), this.getContext());
     }
 
-    void onPlay(YoutubeSearchResult result) {
+    void onPlay(List<YoutubeSearchResult> results, int position) {
         playing = true;
         playPauseView.setImageDrawable(pauseDrawable);
         playPauseView.setVisibility(VISIBLE);
         progressView.setVisibility(INVISIBLE);
-        titleView.setText(result.title);
+        titleView.setText(results.get(position).title);
         thumbnailView.setVisibility(VISIBLE);
-        Glide.with(this).load(result.thumbnail).into(thumbnailView);
+        Glide.with(this).load(results.get(position).thumbnail).into(thumbnailView);
     }
 
-    void onPause(YoutubeSearchResult result) {
-        onPlay(result);
+    void onPause(List<YoutubeSearchResult> results, int position) {
+        onPlay(results, position);
         playing = false;
         playPauseView.setImageDrawable(playDrawable);
     }

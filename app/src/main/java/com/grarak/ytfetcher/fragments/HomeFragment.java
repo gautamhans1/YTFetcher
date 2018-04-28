@@ -57,7 +57,17 @@ public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, Tit
                     youtubeCharts = YoutubeCharts.restore(getActivity());
                 }
                 for (YoutubeSearchResult result : youtubeCharts) {
-                    addItem(new MusicItem(result, v -> playTrack(result)));
+                    addItem(new MusicItem(result, new MusicItem.MusicListener() {
+                        @Override
+                        public void onClick(MusicItem musicItem) {
+                            getMusicManager().play(result);
+                        }
+
+                        @Override
+                        public void onAddPlaylist(MusicItem musicItem) {
+                            showPlaylistDialog(result);
+                        }
+                    }));
                 }
                 youtubeCharts.save(getActivity());
             }

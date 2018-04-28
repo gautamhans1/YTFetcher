@@ -3,15 +3,17 @@ package com.grarak.ytfetcher.fragments;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.widget.CompoundButton;
 
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.Utils;
 import com.grarak.ytfetcher.utils.server.GenericCallback;
-import com.grarak.ytfetcher.utils.server.Status;
-import com.grarak.ytfetcher.utils.server.playlist.PlaylistName;
-import com.grarak.ytfetcher.utils.server.playlist.PlaylistNamesList;
+import com.grarak.ytfetcher.utils.server.playlist.Playlist;
+import com.grarak.ytfetcher.utils.server.playlist.PlaylistResults;
 import com.grarak.ytfetcher.utils.server.playlist.PlaylistServer;
+import com.grarak.ytfetcher.utils.server.playlist.Playlists;
+import com.grarak.ytfetcher.utils.server.youtube.Youtube;
+import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
+import com.grarak.ytfetcher.utils.server.youtube.YoutubeServer;
 import com.grarak.ytfetcher.views.recyclerview.PlaylistHeaderItem;
 import com.grarak.ytfetcher.views.recyclerview.PlaylistItem;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
@@ -37,62 +39,88 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
         server = new PlaylistServer(getActivity());
 
         showProgress();
-        server.listNames(getUser().apikey, new PlaylistServer.PlaylistNameListCallback() {
+        server.list(getUser().apikey, new PlaylistServer.PlaylistNameListCallback() {
             @Override
-            public void onSuccess(PlaylistNamesList playlistNamesList) {
-                addViews(playlistNamesList);
+            public void onSuccess(Playlists playlists) {
+                addViews(playlists);
             }
 
             @Override
             public void onFailure(int code) {
-                addViews(PlaylistNamesList.restore(getActivity()));
+                addViews(Playlists.restore(getActivity()));
             }
 
-            private void addViews(PlaylistNamesList playlistNamesList) {
+            private void addViews(Playlists playlists) {
                 if (!isAdded()) return;
                 dismissProgress();
-                if (playlistNamesList == null) {
-                    playlistNamesList = PlaylistNamesList.restore(getActivity());
+                if (playlists == null) {
+                    playlists = Playlists.restore(getActivity());
                 }
-                playlists.clear();
-                for (PlaylistName playlistName : playlistNamesList) {
-                    addItem(playlistName);
+                PlaylistsFragment.this.playlists.clear();
+                for (Playlist playlist : playlists) {
+                    addItem(playlist);
                 }
-                playlistNamesList.save(getActivity());
+                playlists.save(getActivity());
             }
         });
     }
 
-    private void addItem(PlaylistName playlistName) {
+    private void addItem(Playlist playlist) {
         if (itemsSize() == 0) {
             addItem(new PlaylistHeaderItem());
         }
 
-        playlists.add(playlistName.name);
-        addItem(new PlaylistItem(playlistName, new CompoundButton.OnCheckedChangeListener() {
+        playlists.add(playlist.name);
+        addItem(new PlaylistItem(playlist, new PlaylistItem.PlaylistListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                buttonView.setOnCheckedChangeListener(null);
-                playlistName.apikey = getUser().apikey;
-                playlistName.isPublic = isChecked;
+            public void onClick(PlaylistItem item) {
+                showPlaylist(playlist);
+            }
 
-                CompoundButton.OnCheckedChangeListener onCheckedChangeListener = this;
-                server.setPublic(playlistName, new GenericCallback() {
+            @Override
+            public void onPublic(PlaylistItem item, boolean isPublic) {
+                playlist.apikey = getUser().apikey;
+                playlist.isPublic = isPublic;
+
+                server.setPublic(playlist, new GenericCallback() {
                     @Override
                     public void onSuccess() {
-                        if (!isAdded()) return;
-                        buttonView.setOnCheckedChangeListener(onCheckedChangeListener);
                     }
 
                     @Override
                     public void onFailure(int code) {
                         if (!isAdded()) return;
-                        buttonView.setChecked(!isChecked);
-                        buttonView.setOnCheckedChangeListener(onCheckedChangeListener);
+                        item.setPublic(!isPublic);
+                    }
+                });
+            }
+
+            @Override
+            public void onDelete(PlaylistItem item) {
+                playlist.apikey = getUser().apikey;
+                server.delete(playlist, new GenericCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (!isAdded()) return;
+                        int index = playlists.indexOf(playlist.name);
+                        playlists.remove(index);
+                        getItems().remove(index + 1);
+                        getRecyclerViewAdapter().notifyItemRemoved(index + 1);
+
+                        if (getItems().size() == 1) {
+                            getItems().clear();
+                            getRecyclerViewAdapter().notifyItemRemoved(0);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(int code) {
+                        Utils.toast(R.string.server_offline, getActivity());
                     }
                 });
             }
         }));
+        setAvailablePlaylists(playlists);
     }
 
     @Override
@@ -103,9 +131,9 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
     public void onConfirm(CharSequence text) {
         if (text.toString().isEmpty()) return;
 
-        PlaylistName playlistName = new PlaylistName();
-        playlistName.name = text.toString();
-        playlistName.apikey = getUser().apikey;
+        Playlist playlist = new Playlist();
+        playlist.name = text.toString();
+        playlist.apikey = getUser().apikey;
 
         if (playlists.contains(text.toString())) {
             Utils.toast(R.string.playlist_already_exists, getActivity());
@@ -113,23 +141,98 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
         }
 
         showProgress();
-        server.createName(playlistName, new GenericCallback() {
+        server.create(playlist, new GenericCallback() {
             @Override
             public void onSuccess() {
                 if (!isAdded()) return;
                 dismissProgress();
-                addItem(playlistName);
+                addItem(playlist);
             }
 
             @Override
             public void onFailure(int code) {
                 if (!isAdded()) return;
                 dismissProgress();
-                if (code == Status.PlaylistAlreadyExists) {
-                    Utils.toast(R.string.playlist_already_exists, getActivity());
+                Utils.toast(R.string.server_offline, getActivity());
+            }
+        });
+    }
+
+    private void showPlaylist(Playlist playlist) {
+        showProgress();
+
+        playlist.apikey = getUser().apikey;
+        server.listPlaylistIds(playlist, new PlaylistServer.PlayListLinksCallback() {
+            @Override
+            public void onSuccess(List<String> links) {
+                if (links.size() == 0) {
+                    dismissProgress();
+                    Utils.toast(R.string.no_songs, getActivity());
+                    return;
+                }
+
+                YoutubeServer server = new YoutubeServer(getActivity());
+                List<YoutubeSearchResult> results = new ArrayList<>();
+                for (String id : links) {
+                    Youtube youtube = new Youtube();
+                    youtube.apikey = playlist.apikey;
+                    youtube.id = id;
+
+                    server.getInfo(youtube, new YoutubeServer.YoutubeResultCallback() {
+                        @Override
+                        public void onSuccess(YoutubeSearchResult result) {
+                            synchronized (results) {
+                                results.add(result);
+
+                                if (results.size() == links.size()) {
+                                    if (!isAdded()) return;
+                                    PlaylistResults playlistResults = new PlaylistResults();
+                                    playlistResults.name = playlist.name;
+                                    playlistResults.songs = new ArrayList<>();
+                                    for (String id : links) {
+                                        for (YoutubeSearchResult res : results) {
+                                            if (id.equals(res.id)) {
+                                                playlistResults.songs.add(res);
+                                            }
+                                        }
+                                    }
+
+                                    playlistResults.save(getActivity());
+                                    showPlaylist(playlistResults);
+                                    dismissProgress();
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(int code) {
+                            failure();
+                            server.close();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(int code) {
+                failure();
+            }
+
+            private void failure() {
+                if (!isAdded()) return;
+
+                PlaylistResults playlistResults = PlaylistResults.restore(playlist.name, getActivity());
+                if (playlistResults != null) {
+                    showPlaylist(playlistResults);
                 } else {
                     Utils.toast(R.string.server_offline, getActivity());
                 }
+                dismissProgress();
+            }
+
+            private void showPlaylist(PlaylistResults playlistResults) {
+                showForegroundFragment(
+                        PlaylistIdFragment.newInstance(getUser(), playlistResults));
             }
         });
     }

@@ -36,8 +36,9 @@ public class AddFragment extends TitleFragment {
     private CharSequence hint;
     private OnOpenListener onOpenListener;
     private OnConfirmListener onConfirmListener;
-    private @DrawableRes
-    int imageResource;
+
+    @DrawableRes
+    private int imageResource;
 
     @Override
     protected int getLayoutXml() {
@@ -55,7 +56,7 @@ public class AddFragment extends TitleFragment {
         editTextView = rootView.findViewById(R.id.edittext);
         editTextView.setHint(hint);
         editTextView.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
+            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
                 onDone();
                 return true;
             }
