@@ -13,6 +13,7 @@ import com.grarak.ytfetcher.views.recyclerview.MusicItem;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewAdapter;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, TitleFragment> {
@@ -67,6 +68,18 @@ public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, Tit
                         public void onAddPlaylist(MusicItem musicItem) {
                             showPlaylistDialog(result);
                         }
+
+                        @Override
+                        public void onDelete(MusicItem musicItem) {
+                            if (deleteResult(result)) {
+                                musicItem.setDownloaded();
+                            }
+                        }
+
+                        @Override
+                        public void onDownload(MusicItem musicItem) {
+                            queueDownload(result);
+                        }
                     }));
                 }
                 youtubeCharts.save(getActivity());
@@ -76,6 +89,29 @@ public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, Tit
 
     @Override
     protected void initItems(List<RecyclerViewItem<MusicItem.ViewHolder>> recyclerViewItems) {
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+            ((MusicItem) item).setDownloaded();
+        }
+    }
+
+    @Override
+    protected void onDownloaded(YoutubeSearchResult result) {
+        super.onDownloaded(result);
+
+        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+            MusicItem musicItem = (MusicItem) item;
+            if (musicItem.result.equals(result)) {
+                musicItem.setDownloaded();
+            }
+        }
     }
 
     @Override

@@ -14,7 +14,6 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.MusicManager;
-import com.grarak.ytfetcher.utils.Utils;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
 import java.util.List;
@@ -76,8 +75,6 @@ public class MusicPlayerHeaderView extends LinearLayout {
 
     void onFailure(List<YoutubeSearchResult> results, int position) {
         onNoMusic();
-        Utils.toast(getResources().getString(
-                R.string.failed_song, results.get(position).title), this.getContext());
     }
 
     void onPlay(List<YoutubeSearchResult> results, int position) {

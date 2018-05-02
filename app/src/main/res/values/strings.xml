@@ -9,6 +9,15 @@
     <string name="no_music">No music</string>
     <string name="loading">Loading</string>
     <string name="failed">Failed</string>
+    <string name="music_stopped">Stopped</string>
+    <string name="music_stopped_summary">Music player has been stopped!</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+
+    <!-- Download Service -->
+    <string name="downloading">Downloading</string>
+    <string name="cancel">Cancel</string>
+    <string name="cancel_all">Cancel all</string>
 
     <!-- Login -->
     <string name="switch_login">Switch to login</string>
@@ -34,10 +43,14 @@
     <string name="home">Home</string>
     <string name="popular_music">Popular music</string>
     <string name="charts_failed">Couldn\'t load charts</string>
-    <string name="failed_song">Failed too load %s. Region lock?</string>
+    <string name="region_lock">Region locked. Sorry! :(</string>
     <string name="add_playlist">Add to playlist</string>
+    <string name="download">Download</string>
     <string name="already_in_playlist">Already in playlist</string>
     <string name="failed_add_playlist">Failed to add to playlist</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="delete">Delete</string>
+    <string name="delete_not_possible">Can\'t delete a song when it\'s playing</string>
 
     <!-- Playlists -->
     <string name="playlists">Playlists</string>
@@ -46,7 +59,11 @@
     <string name="playlist_already_exists">Playlist already exists!</string>
     <string name="is_public">Public</string>
     <string name="no_playlists">No playlists found</string>
-    <string name="delete">Delete</string>
+    <string name="no_permissions">No permissions</string>
+    <string name="too_long">%s is too long to download</string>
+    <string name="remove_from_playlist">Remove from playlist</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
 
     <!-- Search -->
     <string name="search">Search</string>
@@ -60,4 +77,8 @@
 
     <!-- Settings -->
     <string name="settings">Settings</string>
+    <string name="signout">Sign out</string>
+    <string name="sure_question">Are you sure?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 </resources>

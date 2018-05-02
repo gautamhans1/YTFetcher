@@ -9,6 +9,7 @@ import android.widget.FrameLayout;
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.MusicManager;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.util.List;
 
@@ -40,6 +41,15 @@ public class MusicPlayerParentView extends FrameLayout {
 
         headerView = new MusicPlayerHeaderView(context);
         addView(headerView, LayoutParams.MATCH_PARENT, collapsedHeight);
+
+        headerView.setOnClickListener(v -> {
+            if (getParent() instanceof SlidingUpPanelLayout) {
+                SlidingUpPanelLayout slidingUpPanelLayout = (SlidingUpPanelLayout) getParent();
+                if (slidingUpPanelLayout.isTouchEnabled()) {
+                    slidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+                }
+            }
+        });
     }
 
     public void setMusicManager(MusicManager musicManager) {
@@ -56,7 +66,7 @@ public class MusicPlayerParentView extends FrameLayout {
         playerView.onFetch(results, position);
     }
 
-    public void onFailure(List<YoutubeSearchResult> results, int position) {
+    public void onFailure(int code, List<YoutubeSearchResult> results, int position) {
         headerView.onFailure(results, position);
         playerView.onFailure(results, position);
     }

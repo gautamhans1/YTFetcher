@@ -232,7 +232,7 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
 
             private void showPlaylist(PlaylistResults playlistResults) {
                 showForegroundFragment(
-                        PlaylistIdFragment.newInstance(getUser(), playlistResults));
+                        PlaylistIdsFragment.newInstance(getUser(), playlistResults));
             }
         });
     }

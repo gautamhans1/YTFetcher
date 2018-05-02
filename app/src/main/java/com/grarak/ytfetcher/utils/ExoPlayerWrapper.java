@@ -2,6 +2,7 @@ package com.grarak.ytfetcher.utils;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.PowerManager;
 
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -11,6 +12,7 @@ import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
@@ -18,6 +20,8 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import com.grarak.ytfetcher.R;
+
+import java.io.File;
 
 public class ExoPlayerWrapper implements Player.EventListener {
 
@@ -42,6 +46,7 @@ public class ExoPlayerWrapper implements Player.EventListener {
 
     private SimpleExoPlayer exoPlayer;
     private DataSource.Factory dataSourceFactory;
+    private PowerManager.WakeLock wakeLock;
 
     private final Object stateLock = new Object();
     private State state;
@@ -55,13 +60,25 @@ public class ExoPlayerWrapper implements Player.EventListener {
         exoPlayer.addListener(this);
         dataSourceFactory = new DefaultDataSourceFactory(context,
                 Util.getUserAgent(context, context.getString(R.string.app_name)));
+
+        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                ExoPlayerWrapper.class.getSimpleName());
     }
 
-    public void setDataSource(String url) {
+    public void setUrl(String url) {
         setState(State.PREPARING);
-        ExtractorMediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+        MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(Uri.parse(url));
         exoPlayer.prepare(mediaSource, true, true);
+    }
+
+    public void setFile(File file) {
+        setState(State.PREPARING);
+        MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(Uri.fromFile(file));
+        exoPlayer.prepare(mediaSource, true, true);
+
     }
 
     public long getCurrentPosition() {
@@ -110,11 +127,10 @@ public class ExoPlayerWrapper implements Player.EventListener {
         this.onErrorListener = onErrorListener;
     }
 
-    public boolean isPreparing() {
-        return getState() == State.PREPARING;
-    }
-
     public void release() {
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
         exoPlayer.release();
     }
 
@@ -180,6 +196,11 @@ public class ExoPlayerWrapper implements Player.EventListener {
     private void setState(State state) {
         synchronized (stateLock) {
             this.state = state;
+            if (state == State.PLAYING) {
+                wakeLock.acquire();
+            } else if (wakeLock.isHeld()) {
+                wakeLock.release();
+            }
         }
     }
 

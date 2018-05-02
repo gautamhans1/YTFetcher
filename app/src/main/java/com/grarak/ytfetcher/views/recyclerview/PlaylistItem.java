@@ -52,6 +52,7 @@ public class PlaylistItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
     protected void bindViewHolder(RecyclerView.ViewHolder viewHolder) {
         TextView title = viewHolder.itemView.findViewById(R.id.title);
         publicSwitch = viewHolder.itemView.findViewById(R.id.public_switch);
+        View menu = viewHolder.itemView.findViewById(R.id.menu);
 
         title.setText(playlist.name);
         publicSwitch.setChecked(playlist.isPublic);
@@ -60,9 +61,13 @@ public class PlaylistItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
         publicSwitch.setOnCheckedChangeListener(publicSwitchListener);
 
         viewHolder.itemView.setOnLongClickListener(v -> {
+            menu.performLongClick();
+            return true;
+        });
+        menu.setOnClickListener(v -> {
             PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
-            Menu menu = popupMenu.getMenu();
-            menu.add(0, 0, 0, R.string.delete);
+            Menu menu1 = popupMenu.getMenu();
+            menu1.add(0, 0, 0, R.string.delete);
             popupMenu.setOnMenuItemClickListener(item -> {
                 switch (item.getItemId()) {
                     case 0:
@@ -72,7 +77,6 @@ public class PlaylistItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
                 return false;
             });
             popupMenu.show();
-            return true;
         });
     }
 

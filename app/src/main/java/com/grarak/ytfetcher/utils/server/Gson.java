@@ -10,4 +10,9 @@ public abstract class Gson implements Serializable {
     public String toString() {
         return new GsonBuilder().create().toJson(this);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Gson && toString().equals(obj.toString());
+    }
 }

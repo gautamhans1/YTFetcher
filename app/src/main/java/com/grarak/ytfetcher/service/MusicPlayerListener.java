@@ -5,13 +5,15 @@ import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 import java.util.List;
 
 public interface MusicPlayerListener {
-    void onConnected();
+    void onConnect();
 
     void onFetchingSong(List<YoutubeSearchResult> results, int position);
 
-    void onFailure(List<YoutubeSearchResult> results, int position);
+    void onFailure(int code, List<YoutubeSearchResult> results, int position);
 
     void onPlay(List<YoutubeSearchResult> results, int position);
 
     void onPause(List<YoutubeSearchResult> results, int position);
+
+    void onDisconnect();
 }

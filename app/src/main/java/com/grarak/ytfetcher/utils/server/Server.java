@@ -3,6 +3,7 @@ package com.grarak.ytfetcher.utils.server;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Server implements Closeable {
 
@@ -29,18 +30,23 @@ public class Server implements Closeable {
         synchronized (this) {
             requests.add(request);
         }
-        new Thread(() -> request.doRequest(url,
-                null, null, new Request.RequestCallback() {
-                    @Override
-                    public void onSuccess(Request request, int status, String response) {
-                        handleRequestCallbackSuccess(requestCallback, request, status, response);
-                    }
+        new Thread(() -> request.doRequest(url, null, null, new Request.RequestCallback() {
+            @Override
+            public void onConnect(Request request, int status, String url) {
+                requestCallback.onConnect(request, status, url);
+            }
 
-                    @Override
-                    public void onFailure(Request request, Exception e) {
-                        handleRequestCallbackFailure(requestCallback, request, e);
-                    }
-                })).start();
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
+                handleRequestCallbackSuccess(requestCallback, request, status, headers, response);
+            }
+
+            @Override
+            public void onFailure(Request request, Exception e) {
+                handleRequestCallbackFailure(requestCallback, request, e);
+            }
+        })).start();
     }
 
     protected void post(String url, String data, Request.RequestCallback requestCallback) {
@@ -48,26 +54,33 @@ public class Server implements Closeable {
         synchronized (this) {
             requests.add(request);
         }
-        new Thread(() -> request.doRequest(url, "application/json",
-                data, new Request.RequestCallback() {
-                    @Override
-                    public void onSuccess(Request request, int status, String response) {
-                        handleRequestCallbackSuccess(requestCallback, request, status, response);
-                    }
+        new Thread(() -> request.doRequest(url, "application/json", data, new Request.RequestCallback() {
+            @Override
+            public void onConnect(Request request, int status, String url) {
+                requestCallback.onConnect(request, status, url);
+            }
 
-                    @Override
-                    public void onFailure(Request request, Exception e) {
-                        handleRequestCallbackFailure(requestCallback, request, e);
-                    }
-                })).start();
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
+                handleRequestCallbackSuccess(requestCallback, request,
+                        status, headers, response);
+            }
+
+            @Override
+            public void onFailure(Request request, Exception e) {
+                handleRequestCallbackFailure(requestCallback, request, e);
+            }
+        })).start();
     }
 
     private void handleRequestCallbackSuccess(Request.RequestCallback requestCallback,
-                                              Request request, int status, String response) {
+                                              Request request, int status,
+                                              Map<String, List<String>> headers, String response) {
         synchronized (this) {
             requests.remove(request);
         }
-        requestCallback.onSuccess(request, status, response);
+        requestCallback.onSuccess(request, status, headers, response);
     }
 
     private void handleRequestCallbackFailure(Request.RequestCallback requestCallback,

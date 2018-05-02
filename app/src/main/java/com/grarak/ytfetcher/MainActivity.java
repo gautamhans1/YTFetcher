@@ -21,6 +21,8 @@ import com.grarak.ytfetcher.fragments.UsersFragment;
 import com.grarak.ytfetcher.service.MusicPlayerListener;
 import com.grarak.ytfetcher.utils.MusicManager;
 import com.grarak.ytfetcher.utils.Settings;
+import com.grarak.ytfetcher.utils.Utils;
+import com.grarak.ytfetcher.utils.server.Status;
 import com.grarak.ytfetcher.utils.server.user.User;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 import com.grarak.ytfetcher.views.musicplayer.MusicPlayerParentView;
@@ -67,6 +69,7 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(items.size());
         currentPage = Settings.getPage(this);
+        viewPager.setCurrentItem(currentPage);
 
         Menu menu = bottomNavigationView.getMenu();
         for (int i = 0; i < items.size(); i++) {
@@ -238,7 +241,7 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
     }
 
     @Override
-    public void onConnected() {
+    public void onConnect() {
         slidingUpPanelLayout.setTouchEnabled(true);
         if (musicManager.isPlaying()) {
             musicPlayerView.onPlay(
@@ -264,8 +267,14 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
     }
 
     @Override
-    public void onFailure(List<YoutubeSearchResult> results, int position) {
-        musicPlayerView.onFailure(results, position);
+    public void onFailure(int code, List<YoutubeSearchResult> results, int position) {
+        if (code == Status.YoutubeFetchFailure) {
+            Utils.toast(R.string.region_lock, this);
+        } else {
+            Utils.toast(R.string.server_offline, this);
+        }
+
+        musicPlayerView.onFailure(code, results, position);
         slidingUpPanelLayout.setTouchEnabled(true);
     }
 
@@ -279,6 +288,13 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
     public void onPause(List<YoutubeSearchResult> results, int position) {
         musicPlayerView.onPause(results, position);
         slidingUpPanelLayout.setTouchEnabled(true);
+    }
+
+    @Override
+    public void onDisconnect() {
+        musicPlayerView.onNoMusic();
+        slidingUpPanelLayout.setTouchEnabled(false);
+        slidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
     }
 
     private static class ViewPagerAdapter extends FragmentStatePagerAdapter {

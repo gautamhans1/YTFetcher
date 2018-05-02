@@ -16,16 +16,12 @@ import com.grarak.ytfetcher.LoginActivity;
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MusicPlayerNotification {
 
     private static final int NOTIFICATION_ID = 1;
     private static final String NOTIFICATION_CHANNEL = "music_channel";
-
-    private Executor executor = Executors.newSingleThreadExecutor();
 
     private NotificationManager manager;
     private MusicPlayerService service;
@@ -53,7 +49,7 @@ public class MusicPlayerNotification {
         }
     }
 
-    private PendingIntent getBoardcast(String action) {
+    private PendingIntent getBroadcast(String action) {
         return PendingIntent.getBroadcast(service, 0, new Intent(action), 0);
     }
 
@@ -61,61 +57,62 @@ public class MusicPlayerNotification {
         fetching.set(true);
         playing.set(false);
         this.result = result;
-        executor.execute(() -> {
-            NotificationCompat.Builder builder =
-                    new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
-                            .setContentTitle(service.getString(R.string.loading))
-                            .setContentText(result.title)
-                            .setSmallIcon(R.drawable.ic_bookmark_music)
-                            .setProgress(0, 0, true);
-            service.startForeground(NOTIFICATION_ID, builder.build());
-        });
+
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
+                        .setContentTitle(service.getString(R.string.loading))
+                        .setContentText(result.title)
+                        .setOngoing(true)
+                        .setSmallIcon(R.drawable.ic_bookmark_music)
+                        .setProgress(0, 0, true);
+
+        service.startForeground(NOTIFICATION_ID, builder.build());
     }
 
     void showFailure(YoutubeSearchResult result) {
         fetching.set(false);
         playing.set(false);
         this.result = result;
-        executor.execute(() -> {
-            NotificationCompat.Builder builder =
-                    new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
-                            .setContentTitle(service.getString(R.string.failed))
-                            .setContentText(result.title)
-                            .setSmallIcon(R.drawable.ic_bookmark_music);
-            service.startForeground(NOTIFICATION_ID, builder.build());
-        });
+
+        Intent intent = new Intent(service, LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        PendingIntent contentIntent = PendingIntent.getActivity(service, 0, intent, 0);
+
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
+                        .setContentTitle(service.getString(R.string.failed))
+                        .setContentText(result.title)
+                        .setContentIntent(contentIntent)
+                        .setSmallIcon(R.drawable.ic_bookmark_music);
+
+        service.startForeground(NOTIFICATION_ID, builder.build());
     }
 
     void showPlay(YoutubeSearchResult result) {
         fetching.set(false);
         playing.set(true);
         this.result = result;
-        executor.execute(() -> {
+        new Thread(() -> {
             NotificationCompat.Builder builder = baseBuilder(result,
-                    playingBitmap = getBitmap(result.thumbnail));
-            builder.addAction(new NotificationCompat.Action(
-                    R.drawable.ic_pause,
-                    service.getString(R.string.play),
-                    getBoardcast(MusicPlayerService.ACTION_MUSIC_PLAY_PAUSE)));
+                    playingBitmap = getBitmap(result.thumbnail), true)
+                    .setOngoing(true);
 
             service.startForeground(NOTIFICATION_ID, builder.build());
-        });
+        }).start();
     }
 
     void showPause() {
         fetching.set(false);
         playing.set(false);
         if (result == null) return;
-        executor.execute(() -> {
+        new Thread(() -> {
             NotificationCompat.Builder builder = baseBuilder(result,
-                    playingBitmap == null ? getBitmap(result.thumbnail) : playingBitmap);
-            builder.addAction(new NotificationCompat.Action(
-                    R.drawable.ic_play,
-                    service.getString(R.string.play),
-                    getBoardcast(MusicPlayerService.ACTION_MUSIC_PLAY_PAUSE)));
+                    playingBitmap == null ? getBitmap(result.thumbnail) : playingBitmap, false)
+                    .setAutoCancel(true);
 
             service.startForeground(NOTIFICATION_ID, builder.build());
-        });
+        }).start();
     }
 
     void refresh() {
@@ -129,7 +126,7 @@ public class MusicPlayerNotification {
     }
 
     private NotificationCompat.Builder baseBuilder(
-            YoutubeSearchResult result, Bitmap bitmap) {
+            YoutubeSearchResult result, Bitmap bitmap, boolean play) {
         Intent intent = new Intent(service, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
@@ -147,28 +144,40 @@ public class MusicPlayerNotification {
             }
         }
 
-        boolean isBound = service.isBounded();
+        boolean isBound = service.isBound();
 
         android.support.v4.media.app.NotificationCompat.MediaStyle mediaStyle =
                 new android.support.v4.media.app.NotificationCompat.DecoratedMediaCustomViewStyle();
-        mediaStyle.setShowActionsInCompactView(isBound ? 0 : 1);
+        mediaStyle.setShowActionsInCompactView(2 - (isBound ? 1 : 0));
 
-        NotificationCompat.Builder builder =
-                new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
-                        .setContentTitle(title)
-                        .setContentText(contentText)
-                        .setSubText(result.duration)
-                        .setSmallIcon(R.drawable.ic_bookmark_music)
-                        .setLargeIcon(bitmap)
-                        .setContentIntent(contentIntent)
-                        .setDeleteIntent(getBoardcast(MusicPlayerService.ACTION_MUSIC_PLAYER_STOP))
-                        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                        .setStyle(mediaStyle);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
+                .setContentTitle(title)
+                .setContentText(contentText)
+                .setSubText(result.duration)
+                .setSmallIcon(R.drawable.ic_bookmark_music)
+                .setLargeIcon(bitmap)
+                .setContentIntent(contentIntent)
+                .addAction(new NotificationCompat.Action(
+                        R.drawable.ic_skip_previous,
+                        service.getString(R.string.previous),
+                        getBroadcast(MusicPlayerService.ACTION_MUSIC_PREVIOUS)))
+                .addAction(new NotificationCompat.Action(
+                        play ? R.drawable.ic_pause : R.drawable.ic_play,
+                        service.getString(play ? R.string.pause : R.string.play),
+                        getBroadcast(MusicPlayerService.ACTION_MUSIC_PLAY_PAUSE)))
+                .addAction(new NotificationCompat.Action(
+                        R.drawable.ic_skip_next,
+                        service.getString(R.string.next),
+                        getBroadcast(MusicPlayerService.ACTION_MUSIC_NEXT)))
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setStyle(mediaStyle);
+
         if (!isBound) {
             builder.addAction(new NotificationCompat.Action(
                     R.drawable.ic_stop,
                     service.getString(R.string.stop),
-                    getBoardcast(MusicPlayerService.ACTION_MUSIC_PLAYER_STOP)));
+                    getBroadcast(MusicPlayerService.ACTION_MUSIC_PLAYER_STOP)));
         }
         return builder;
     }
@@ -180,6 +189,6 @@ public class MusicPlayerNotification {
         }
         manager.createNotificationChannel(new NotificationChannel(
                 NOTIFICATION_CHANNEL, service.getString(R.string.music_player),
-                NotificationManager.IMPORTANCE_LOW));
+                NotificationManager.IMPORTANCE_DEFAULT));
     }
 }

@@ -24,14 +24,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class PlaylistIdFragment extends RecyclerViewFragment<PlaylistIdItem.ViewHolder, PlayFragment> {
+public class PlaylistIdsFragment extends RecyclerViewFragment<PlaylistIdItem.ViewHolder, PlayFragment> {
 
-    public static PlaylistIdFragment newInstance(User user,
-                                                 PlaylistResults playlistResults) {
+    public static PlaylistIdsFragment newInstance(User user,
+                                                  PlaylistResults playlistResults) {
         Bundle args = new Bundle();
         args.putSerializable(MainActivity.USER_INTENT, user);
         args.putSerializable("playlistResults", playlistResults);
-        PlaylistIdFragment fragment = new PlaylistIdFragment();
+        PlaylistIdsFragment fragment = new PlaylistIdsFragment();
         fragment.setArguments(args);
         return fragment;
     }
@@ -76,12 +76,7 @@ public class PlaylistIdFragment extends RecyclerViewFragment<PlaylistIdItem.View
         public boolean onMove(RecyclerView recyclerView,
                               RecyclerView.ViewHolder viewHolder,
                               RecyclerView.ViewHolder target) {
-            Collections.swap(playlistResults.songs,
-                    viewHolder.getAdapterPosition(), target.getAdapterPosition());
-            Collections.swap(getItems(),
-                    viewHolder.getAdapterPosition(), target.getAdapterPosition());
-            getRecyclerViewAdapter().notifyItemMoved(viewHolder.getAdapterPosition(),
-                    target.getAdapterPosition());
+            move(viewHolder.getAdapterPosition(), target.getAdapterPosition());
             return true;
         }
 
@@ -90,17 +85,23 @@ public class PlaylistIdFragment extends RecyclerViewFragment<PlaylistIdItem.View
         }
     });
 
+    private void move(int oldPosition, int newPosition) {
+        Collections.swap(playlistResults.songs, oldPosition, newPosition);
+        Collections.swap(getItems(), oldPosition, newPosition);
+        getRecyclerViewAdapter().notifyItemMoved(oldPosition, newPosition);
+    }
+
     @Override
     protected void initItems(List<RecyclerViewItem<PlaylistIdItem.ViewHolder>> recyclerViewItems) {
         for (YoutubeSearchResult result : playlistResults.songs) {
             recyclerViewItems.add(new PlaylistIdItem(result, new PlaylistIdItem.PlaylistLinkListener() {
                 @Override
-                public void onClick() {
+                public void onClick(PlaylistIdItem item) {
                     getMusicManager().play(result);
                 }
 
                 @Override
-                public void onDelete() {
+                public void onRemoveFromPlaylist(PlaylistIdItem item) {
                     PlaylistId playlistId = new PlaylistId();
                     playlistId.apikey = getUser().apikey;
                     playlistId.name = playlistResults.name;
@@ -115,7 +116,7 @@ public class PlaylistIdFragment extends RecyclerViewFragment<PlaylistIdItem.View
                             getRecyclerViewAdapter().notifyItemRemoved(index);
 
                             if (getItems().size() == 0) {
-                                removeForegroundFragment(PlaylistIdFragment.this);
+                                removeForegroundFragment(PlaylistIdsFragment.this);
                             }
                         }
 
@@ -125,7 +126,58 @@ public class PlaylistIdFragment extends RecyclerViewFragment<PlaylistIdItem.View
                         }
                     });
                 }
+
+                @Override
+                public void onDelete(PlaylistIdItem item) {
+                    if (deleteResult(result)) {
+                        item.setDownloaded();
+                    }
+                }
+
+                @Override
+                public void onDownload(PlaylistIdItem item) {
+                    queueDownload(result);
+                }
+
+                @Override
+                public void onMoveUp(PlaylistIdItem item) {
+                    int position = getItems().indexOf(item);
+                    if (position > 0) {
+                        move(position, position - 1);
+                    }
+                }
+
+                @Override
+                public void onMoveDown(PlaylistIdItem item) {
+                    int position = getItems().indexOf(item);
+                    if (position < getItems().size()) {
+                        move(position, position + 1);
+                    }
+                }
             }));
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        List<RecyclerViewItem<PlaylistIdItem.ViewHolder>> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem<PlaylistIdItem.ViewHolder> item : items) {
+            ((PlaylistIdItem) item).setDownloaded();
+        }
+    }
+
+    @Override
+    protected void onDownloaded(YoutubeSearchResult result) {
+        super.onDownloaded(result);
+
+        List<RecyclerViewItem<PlaylistIdItem.ViewHolder>> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem<PlaylistIdItem.ViewHolder> item : items) {
+            PlaylistIdItem playlistIdItem = (PlaylistIdItem) item;
+            if (playlistIdItem.result.equals(result)) {
+                playlistIdItem.setDownloaded();
+            }
         }
     }
 
@@ -149,6 +201,13 @@ public class PlaylistIdFragment extends RecyclerViewFragment<PlaylistIdItem.View
                 List<YoutubeSearchResult> results = new ArrayList<>(playlistResults.songs);
                 Collections.shuffle(results);
                 getMusicManager().play(results, 0);
+            }
+
+            @Override
+            public void onDownload() {
+                for (YoutubeSearchResult result : playlistResults.songs) {
+                    queueDownload(result);
+                }
             }
         });
     }

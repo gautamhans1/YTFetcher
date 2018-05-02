@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.grarak.ytfetcher.R;
+import com.grarak.ytfetcher.utils.Log;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final ImageView thumbnail;
+        private final View downloaded;
         private final TextView title;
         private final TextView summary;
         private final AppCompatImageView menu;
@@ -29,6 +31,7 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
             super(itemView);
 
             thumbnail = itemView.findViewById(R.id.thumbnail);
+            downloaded = itemView.findViewById(R.id.downloaded_text);
             title = itemView.findViewById(R.id.title);
             summary = itemView.findViewById(R.id.summary);
             menu = itemView.findViewById(R.id.menu);
@@ -39,10 +42,15 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
         void onClick(MusicItem musicItem);
 
         void onAddPlaylist(MusicItem musicItem);
+
+        void onDelete(MusicItem musicItem);
+
+        void onDownload(MusicItem musicItem);
     }
 
-    private YoutubeSearchResult result;
+    public YoutubeSearchResult result;
     private MusicListener musicListener;
+    private ViewHolder viewHolder;
 
     public MusicItem(YoutubeSearchResult result, MusicListener musicListener) {
         this.result = result;
@@ -61,6 +69,8 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
 
     @Override
     protected void bindViewHolder(ViewHolder viewHolder) {
+        this.viewHolder = viewHolder;
+
         viewHolder.itemView.setOnClickListener(v -> musicListener.onClick(this));
         viewHolder.itemView.setOnLongClickListener(v -> {
             viewHolder.menu.performClick();
@@ -77,16 +87,36 @@ public class MusicItem extends RecyclerViewItem<MusicItem.ViewHolder> {
             PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
             Menu menu = popupMenu.getMenu();
             menu.add(0, 0, 0, R.string.add_playlist);
+            if (viewHolder.downloaded.getVisibility() == View.VISIBLE) {
+                menu.add(0, 1, 0, R.string.delete);
+            } else {
+                menu.add(0, 2, 0, R.string.download);
+            }
             popupMenu.setOnMenuItemClickListener(item -> {
                 switch (item.getItemId()) {
                     case 0:
                         musicListener.onAddPlaylist(this);
+                        return true;
+                    case 1:
+                        musicListener.onDelete(this);
+                        return true;
+                    case 2:
+                        musicListener.onDownload(this);
                         return true;
                 }
                 return false;
             });
             popupMenu.show();
         });
+
+        setDownloaded();
+    }
+
+    public void setDownloaded() {
+        if (viewHolder != null) {
+            viewHolder.downloaded.setVisibility(result.getDownloadPath(
+                    viewHolder.itemView.getContext()).exists() ? View.VISIBLE : View.INVISIBLE);
+        }
     }
 
     public static class MusicAdapter extends RecyclerViewAdapter<ViewHolder> {

@@ -21,10 +21,21 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp" />
 
+        <TextView
+            android:id="@+id/downloaded_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:text="@string/downloaded"
+            android:textStyle="italic"
+            android:visibility="gone" />
+
         <android.support.v7.widget.AppCompatImageView
             android:id="@+id/menu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
             app:srcCompat="@drawable/ic_dots"
             app:tint="?android:attr/textColorSecondary" />
     </LinearLayout>

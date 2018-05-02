@@ -14,6 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="10dp"
             android:scaleType="fitCenter"
             android:visibility="invisible"
             app:srcCompat="@drawable/ic_play"
@@ -24,6 +25,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center"
+            android:padding="10dp"
             android:visibility="invisible" />
     </FrameLayout>
 

@@ -15,6 +15,8 @@ public class PlayFragment extends TitleFragment {
         void onPlay();
 
         void onShuffle();
+
+        void onDownload();
     }
 
     private PlayListener playListener;
@@ -31,6 +33,11 @@ public class PlayFragment extends TitleFragment {
                              @Nullable Bundle savedInstanceState) {
         View rootView = super.onCreateView(inflater, container, savedInstanceState);
 
+        rootView.findViewById(R.id.download).setOnClickListener(v -> {
+            if (playListener != null) {
+                playListener.onDownload();
+            }
+        });
         rootView.findViewById(R.id.shuffle).setOnClickListener(v -> {
             if (playListener != null) {
                 playListener.onShuffle();

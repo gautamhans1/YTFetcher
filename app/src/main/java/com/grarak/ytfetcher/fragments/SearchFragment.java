@@ -12,6 +12,7 @@ import com.grarak.ytfetcher.views.recyclerview.MusicItem;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewAdapter;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, AddFragment>
@@ -56,6 +57,29 @@ public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, A
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+            ((MusicItem) item).setDownloaded();
+        }
+    }
+
+    @Override
+    protected void onDownloaded(YoutubeSearchResult result) {
+        super.onDownloaded(result);
+
+        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+            MusicItem musicItem = (MusicItem) item;
+            if (musicItem.result.equals(result)) {
+                musicItem.setDownloaded();
+            }
+        }
+    }
+
+    @Override
     public void onConfirm(CharSequence text) {
         if (text.toString().isEmpty() || text.toString().equals(title)) {
             return;
@@ -86,6 +110,18 @@ public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, A
                         @Override
                         public void onAddPlaylist(MusicItem musicItem) {
                             showPlaylistDialog(result);
+                        }
+
+                        @Override
+                        public void onDelete(MusicItem musicItem) {
+                            if (deleteResult(result)) {
+                                musicItem.setDownloaded();
+                            }
+                        }
+
+                        @Override
+                        public void onDownload(MusicItem musicItem) {
+                            queueDownload(result);
                         }
                     }));
                 }

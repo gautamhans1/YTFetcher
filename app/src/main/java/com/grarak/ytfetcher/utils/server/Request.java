@@ -11,12 +11,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Request implements Closeable {
 
     public interface RequestCallback {
-        void onSuccess(Request request, int status, String response);
+        void onConnect(Request request, int status, String url);
+
+        void onSuccess(Request request, int status,
+                       Map<String, List<String>> headers, String response);
 
         void onFailure(Request request, Exception e);
     }
@@ -69,6 +74,7 @@ public class Request implements Closeable {
                     return;
             }
 
+            handler.post(() -> requestCallback.onConnect(this, statusCode, url));
             InputStream inputStream;
             if (statusCode < 200 || statusCode >= 300) {
                 inputStream = connection.getErrorStream();
@@ -81,7 +87,8 @@ public class Request implements Closeable {
             while ((line = reader.readLine()) != null) {
                 response.append(line).append("\n");
             }
-            handler.post(() -> requestCallback.onSuccess(this, statusCode, response.toString()));
+            handler.post(() -> requestCallback.onSuccess(this, statusCode,
+                    connection.getHeaderFields(), response.toString()));
         } catch (IOException e) {
             if (!closed.get()) {
                 handler.post(() -> requestCallback.onFailure(this, e));
@@ -107,8 +114,10 @@ public class Request implements Closeable {
     @Override
     public void close() {
         closed.set(true);
-        if (connection != null) {
-            connection.disconnect();
-        }
+        new Thread(() -> {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }).start();
     }
 }

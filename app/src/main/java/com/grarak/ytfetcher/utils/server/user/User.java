@@ -22,6 +22,10 @@ public class User extends Gson {
         return fromString(Prefs.getString("user", null, context));
     }
 
+    public static void delete(Context context) {
+        Prefs.remove("user", context);
+    }
+
     public static User fromString(String json) {
         try {
             return new GsonBuilder().create().fromJson(json, User.class);

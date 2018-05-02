@@ -13,6 +13,7 @@ import com.grarak.ytfetcher.utils.server.Status;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.util.List;
+import java.util.Map;
 
 public class UserServer extends Server {
 
@@ -39,7 +40,12 @@ public class UserServer extends Server {
     public void signUp(User user, UserCallback userCallback) {
         post(getUrl("users/signup"), user.toString(), new Request.RequestCallback() {
             @Override
-            public void onSuccess(Request request, int status, String response) {
+            public void onConnect(Request request, int status, String url) {
+            }
+
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
                 handleUserCallbackSuccess(userCallback, status, response);
             }
 
@@ -53,7 +59,12 @@ public class UserServer extends Server {
     public void login(User user, UserCallback userCallback) {
         post(getUrl("users/login"), user.toString(), new Request.RequestCallback() {
             @Override
-            public void onSuccess(Request request, int status, String response) {
+            public void onConnect(Request request, int status, String url) {
+            }
+
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
                 handleUserCallbackSuccess(userCallback, status, response);
             }
 
@@ -67,7 +78,12 @@ public class UserServer extends Server {
     public void list(User user, int page, UsersCallback usersCallback) {
         post(getUrl("users/list?page=" + page), user.toString(), new Request.RequestCallback() {
             @Override
-            public void onSuccess(Request request, int status, String response) {
+            public void onConnect(Request request, int status, String url) {
+            }
+
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
                 if (status == HttpURLConnection.HTTP_OK) {
                     Type listType = new TypeToken<List<User>>() {
                     }.getType();
@@ -89,7 +105,12 @@ public class UserServer extends Server {
     public void setVerification(User user, GenericCallback genericCallback) {
         post(getUrl("users/setverification"), user.toString(), new Request.RequestCallback() {
             @Override
-            public void onSuccess(Request request, int status, String response) {
+            public void onConnect(Request request, int status, String url) {
+            }
+
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
                 if (status == HttpURLConnection.HTTP_OK) {
                     genericCallback.onSuccess();
                 } else {

@@ -9,10 +9,10 @@
         android:id="@+id/viewpager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
         android:paddingLeft="50dp"
-        android:paddingRight="50dp"
-        android:layout_weight="1" />
+        android:paddingRight="50dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -69,8 +69,7 @@
                         android:layout_gravity="center_horizontal"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:padding="13dp"
-                        android:rotation="180"
-                        app:srcCompat="@drawable/ic_skip"
+                        app:srcCompat="@drawable/ic_skip_previous"
                         app:tint="?android:attr/textColorSecondary" />
                 </FrameLayout>
 
@@ -95,7 +94,7 @@
                         android:layout_gravity="center_horizontal"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:padding="13dp"
-                        app:srcCompat="@drawable/ic_skip"
+                        app:srcCompat="@drawable/ic_skip_next"
                         app:tint="?android:attr/textColorSecondary" />
                 </FrameLayout>
             </LinearLayout>

@@ -2,13 +2,21 @@ package com.grarak.ytfetcher.utils;
 
 import android.content.Context;
 import android.content.res.Configuration;
+import android.os.Environment;
 import android.support.annotation.StringRes;
 import android.util.Base64;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
+import java.io.File;
+
 public class Utils {
+
+    public static File getDownloadFolder(Context context) {
+        return new File(Environment.getExternalStorageDirectory()
+                + "/Android/data/" + context.getPackageName() + "/files");
+    }
 
     public static String formatSeconds(long seconds) {
         long minutes = seconds / 60;

@@ -31,7 +31,7 @@ public class MusicManager {
                 MusicManager.this.service = binder.getService();
                 MusicManager.this.service.setListener(listener);
                 MusicManager.this.service.onBind();
-                listener.onConnected();
+                listener.onConnect();
             }
         }
 
@@ -56,11 +56,13 @@ public class MusicManager {
     }
 
     public void onPause() {
-        if (service != null) {
-            service.onUnbind();
-            service.setListener(null);
+        synchronized (this) {
+            if (service != null) {
+                service.onUnbind();
+                service.setListener(null);
+            }
+            context.unbindService(serviceConnection);
         }
-        context.unbindService(serviceConnection);
     }
 
     public void play(YoutubeSearchResult result) {
@@ -124,7 +126,7 @@ public class MusicManager {
     public int getPreparingTrackPositon() {
         synchronized (this) {
             if (service != null) {
-                return service.getPreparingTrackPositon();
+                return service.getPreparingTrackPosition();
             }
         }
         return -1;
