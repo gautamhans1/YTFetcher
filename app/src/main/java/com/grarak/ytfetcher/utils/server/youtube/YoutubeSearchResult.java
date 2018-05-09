@@ -35,4 +35,12 @@ public class YoutubeSearchResult extends Gson {
     public static YoutubeSearchResult restore(String id, Context context) {
         return fromString(Prefs.getString("result_" + id, null, context));
     }
+
+    public boolean delete(Context context) {
+        if (getDownloadPath(context).delete()) {
+            Prefs.remove("result_" + id, context);
+            return true;
+        }
+        return false;
+    }
 }

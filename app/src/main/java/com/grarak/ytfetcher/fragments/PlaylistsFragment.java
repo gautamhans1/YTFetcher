@@ -2,11 +2,11 @@ package com.grarak.ytfetcher.fragments;
 
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.Utils;
 import com.grarak.ytfetcher.utils.server.GenericCallback;
+import com.grarak.ytfetcher.utils.server.Status;
 import com.grarak.ytfetcher.utils.server.playlist.Playlist;
 import com.grarak.ytfetcher.utils.server.playlist.PlaylistResults;
 import com.grarak.ytfetcher.utils.server.playlist.PlaylistServer;
@@ -19,12 +19,13 @@ import com.grarak.ytfetcher.views.recyclerview.PlaylistItem;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHolder, AddFragment>
+public class PlaylistsFragment extends RecyclerViewFragment<AddFragment>
         implements AddFragment.OnConfirmListener {
 
-    private List<String> playlists = new ArrayList<>();
     private PlaylistServer server;
 
     @Override
@@ -37,9 +38,12 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
         if (server != null) return;
 
         server = new PlaylistServer(getActivity());
+        fetchPlaylists();
+    }
 
+    private void fetchPlaylists() {
         showProgress();
-        server.list(getUser().apikey, new PlaylistServer.PlaylistNameListCallback() {
+        server.list(getUser().apikey, new PlaylistServer.PlaylistListCallback() {
             @Override
             public void onSuccess(Playlists playlists) {
                 addViews(playlists);
@@ -52,11 +56,10 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
 
             private void addViews(Playlists playlists) {
                 if (!isAdded()) return;
+                clearItems();
                 dismissProgress();
-                if (playlists == null) {
-                    playlists = Playlists.restore(getActivity());
-                }
-                PlaylistsFragment.this.playlists.clear();
+                if (playlists == null) return;
+
                 for (Playlist playlist : playlists) {
                     addItem(playlist);
                 }
@@ -70,7 +73,6 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
             addItem(new PlaylistHeaderItem());
         }
 
-        playlists.add(playlist.name);
         addItem(new PlaylistItem(playlist, new PlaylistItem.PlaylistListener() {
             @Override
             public void onClick(PlaylistItem item) {
@@ -102,14 +104,10 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
                     @Override
                     public void onSuccess() {
                         if (!isAdded()) return;
-                        int index = playlists.indexOf(playlist.name);
-                        playlists.remove(index);
-                        getItems().remove(index + 1);
-                        getRecyclerViewAdapter().notifyItemRemoved(index + 1);
+                        removeItem(item);
 
                         if (getItems().size() == 1) {
-                            getItems().clear();
-                            getRecyclerViewAdapter().notifyItemRemoved(0);
+                            clearItems();
                         }
                     }
 
@@ -120,11 +118,18 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
                 });
             }
         }));
+
+        List<String> playlists = new ArrayList<>();
+        for (RecyclerViewItem item : getItems()) {
+            if (item instanceof PlaylistItem) {
+                playlists.add(((PlaylistItem) item).playlist.name);
+            }
+        }
         setAvailablePlaylists(playlists);
     }
 
     @Override
-    protected void initItems(List<RecyclerViewItem<RecyclerView.ViewHolder>> recyclerViewItems) {
+    protected void initItems(List<RecyclerViewItem> recyclerViewItems) {
     }
 
     @Override
@@ -134,11 +139,6 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
         Playlist playlist = new Playlist();
         playlist.name = text.toString();
         playlist.apikey = getUser().apikey;
-
-        if (playlists.contains(text.toString())) {
-            Utils.toast(R.string.playlist_already_exists, getActivity());
-            return;
-        }
 
         showProgress();
         server.create(playlist, new GenericCallback() {
@@ -153,7 +153,11 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
             public void onFailure(int code) {
                 if (!isAdded()) return;
                 dismissProgress();
-                Utils.toast(R.string.server_offline, getActivity());
+                if (code == Status.PlaylistIdAlreadyExists) {
+                    Utils.toast(R.string.playlist_already_exists, getActivity());
+                } else {
+                    Utils.toast(R.string.server_offline, getActivity());
+                }
             }
         });
     }
@@ -162,18 +166,18 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
         showProgress();
 
         playlist.apikey = getUser().apikey;
-        server.listPlaylistIds(playlist, new PlaylistServer.PlayListLinksCallback() {
+        server.listPlaylistIds(playlist, new PlaylistServer.PlayListIdsCallback() {
             @Override
-            public void onSuccess(List<String> links) {
-                if (links.size() == 0) {
+            public void onSuccess(List<String> ids) {
+                if (ids.size() == 0) {
                     dismissProgress();
                     Utils.toast(R.string.no_songs, getActivity());
                     return;
                 }
 
                 YoutubeServer server = new YoutubeServer(getActivity());
-                List<YoutubeSearchResult> results = new ArrayList<>();
-                for (String id : links) {
+                Map<String, YoutubeSearchResult> results = new HashMap<>();
+                for (String id : ids) {
                     Youtube youtube = new Youtube();
                     youtube.apikey = playlist.apikey;
                     youtube.id = id;
@@ -182,19 +186,15 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
                         @Override
                         public void onSuccess(YoutubeSearchResult result) {
                             synchronized (results) {
-                                results.add(result);
+                                results.put(id, result);
 
-                                if (results.size() == links.size()) {
+                                if (results.size() == ids.size()) {
                                     if (!isAdded()) return;
                                     PlaylistResults playlistResults = new PlaylistResults();
                                     playlistResults.name = playlist.name;
                                     playlistResults.songs = new ArrayList<>();
-                                    for (String id : links) {
-                                        for (YoutubeSearchResult res : results) {
-                                            if (id.equals(res.id)) {
-                                                playlistResults.songs.add(res);
-                                            }
-                                        }
+                                    for (String id : ids) {
+                                        playlistResults.songs.add(results.get(id));
                                     }
 
                                     playlistResults.save(getActivity());
@@ -232,9 +232,15 @@ public class PlaylistsFragment extends RecyclerViewFragment<RecyclerView.ViewHol
 
             private void showPlaylist(PlaylistResults playlistResults) {
                 showForegroundFragment(
-                        PlaylistIdsFragment.newInstance(getUser(), playlistResults));
+                        PlaylistIdsFragment.newInstance(getUser(), playlistResults, false));
             }
         });
+    }
+
+    @Override
+    public void onRemoveForeground() {
+        super.onRemoveForeground();
+        fetchPlaylists();
     }
 
     @Override

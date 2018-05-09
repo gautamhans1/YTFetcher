@@ -5,6 +5,10 @@ import android.preference.PreferenceManager;
 
 public class Prefs {
 
+    public static void clear(Context context) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().clear().apply();
+    }
+
     public static void remove(String name, Context context) {
         PreferenceManager.getDefaultSharedPreferences(context).edit().remove(name).apply();
     }

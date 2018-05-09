@@ -5,6 +5,14 @@ import android.support.annotation.NonNull;
 
 public class Settings {
 
+    public static void setDarkTheme(boolean enabled, Context context) {
+        Prefs.saveBoolean("dark_theme", enabled, context);
+    }
+
+    public static boolean isDarkTheme(Context context) {
+        return Prefs.getBoolean("dark_theme", true, context);
+    }
+
     public static String getLastSearch(Context context) {
         return Prefs.getString("last_search", "", context);
     }

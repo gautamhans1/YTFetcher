@@ -7,7 +7,7 @@ import android.widget.TextView;
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
-public class ButtonItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
+public class ButtonItem extends RecyclerViewItem {
     private CharSequence text;
     private int textColor;
     private int backgroundColor;
@@ -15,15 +15,13 @@ public class ButtonItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
 
     private RecyclerView.ViewHolder viewHolder;
 
-    @Override
-    protected int getLayoutXml() {
-        return R.layout.item_button;
+    public ButtonItem(View.OnClickListener onClickListener) {
+        this.onClickListener = onClickListener;
     }
 
     @Override
-    protected RecyclerView.ViewHolder createViewHolder(View inflatedView) {
-        return new RecyclerView.ViewHolder(inflatedView) {
-        };
+    protected int getLayoutXml() {
+        return R.layout.item_button;
     }
 
     @Override
@@ -45,11 +43,6 @@ public class ButtonItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
 
     public void setBackgroundColor(int color) {
         backgroundColor = color;
-        setup();
-    }
-
-    public void setOnClickListener(View.OnClickListener onClickListener) {
-        this.onClickListener = onClickListener;
         setup();
     }
 

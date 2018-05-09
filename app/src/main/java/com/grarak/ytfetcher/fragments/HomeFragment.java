@@ -10,20 +10,14 @@ import com.grarak.ytfetcher.utils.server.youtube.YoutubeCharts;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeServer;
 import com.grarak.ytfetcher.views.recyclerview.MusicItem;
-import com.grarak.ytfetcher.views.recyclerview.RecyclerViewAdapter;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, TitleFragment> {
+public class HomeFragment extends RecyclerViewFragment<TitleFragment> {
 
     private YoutubeServer server;
-
-    @Override
-    protected RecyclerViewAdapter<MusicItem.ViewHolder> createAdapter() {
-        return new MusicItem.MusicAdapter(getItems(), true);
-    }
 
     @Override
     protected LinearLayoutManager createLayoutManager() {
@@ -80,7 +74,7 @@ public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, Tit
                         public void onDownload(MusicItem musicItem) {
                             queueDownload(result);
                         }
-                    }));
+                    }, true));
                 }
                 youtubeCharts.save(getActivity());
             }
@@ -88,15 +82,15 @@ public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, Tit
     }
 
     @Override
-    protected void initItems(List<RecyclerViewItem<MusicItem.ViewHolder>> recyclerViewItems) {
+    protected void initItems(List<RecyclerViewItem> recyclerViewItems) {
     }
 
     @Override
     public void onResume() {
         super.onResume();
 
-        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
-        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+        List<RecyclerViewItem> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem item : items) {
             ((MusicItem) item).setDownloaded();
         }
     }
@@ -105,8 +99,8 @@ public class HomeFragment extends RecyclerViewFragment<MusicItem.ViewHolder, Tit
     protected void onDownloaded(YoutubeSearchResult result) {
         super.onDownloaded(result);
 
-        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
-        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+        List<RecyclerViewItem> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem item : items) {
             MusicItem musicItem = (MusicItem) item;
             if (musicItem.result.equals(result)) {
                 musicItem.setDownloaded();

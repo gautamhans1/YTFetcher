@@ -9,7 +9,6 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,17 +20,17 @@ import com.grarak.ytfetcher.views.recyclerview.RecyclerViewAdapter;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, TF extends BaseFragment>
+public abstract class RecyclerViewFragment<TF extends BaseFragment>
         extends BaseFragment {
 
-    private List<RecyclerViewItem<VH>> items = new ArrayList<>();
-    private RecyclerViewAdapter<VH> adapter;
+    private List<RecyclerViewItem> items = new ArrayList<>();
+    private RecyclerViewAdapter adapter;
 
     private BottomNavigationView bottomNavigationView;
 
+    private View rootView;
     private RecyclerView recyclerView;
     private LinearLayoutManager layoutManager;
     private TextView messageView;
@@ -48,8 +47,8 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         return R.layout.fragment_recyclerview;
     }
 
-    protected RecyclerViewAdapter<VH> createAdapter() {
-        return new RecyclerViewAdapter<>(items);
+    protected RecyclerViewAdapter createAdapter() {
+        return new RecyclerViewAdapter(items);
     }
 
     protected abstract LinearLayoutManager createLayoutManager();
@@ -76,7 +75,9 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         }
 
         private void setTranslations() {
-            titleContent.setTranslationY(-scrollDistance / 2);
+            if (titleContent != null) {
+                titleContent.setTranslationY(-scrollDistance / 2);
+            }
 
             if (bottomNavigationView == null
                     || recyclerView.getPaddingBottom() == 0) {
@@ -130,7 +131,7 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
                              @Nullable Bundle savedInstanceState) {
         bottomNavigationView = getBottomNavigationView();
 
-        View rootView = inflater.inflate(getLayoutXml(), container, false);
+        rootView = inflater.inflate(getLayoutXml(), container, false);
 
         recyclerView = rootView.findViewById(R.id.recyclerview);
         recyclerView.setHasFixedSize(true);
@@ -188,22 +189,34 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
             rightPadding = leftPadding;
         }
 
+        int titleHeight = 0;
+        if (titleContent != null) {
+            titleHeight = titleContent.getHeight();
+        }
         recyclerView.setPadding(
                 leftPadding,
-                recyclerView.getPaddingTop() + titleContent.getHeight(),
+                recyclerView.getPaddingTop() + titleHeight,
                 rightPadding,
                 recyclerView.getPaddingBottom()
         );
 
         recyclerView.scrollToPosition(firstVisibleItem);
-        recyclerView.addOnScrollListener(onScrollListener);
+        if (!recyclerView.getClipToPadding()) {
+            recyclerView.addOnScrollListener(onScrollListener);
+        }
 
-        recyclerView.setOnTouchListener((v, event) -> {
-            if (progressView == null || progressView.getVisibility() == View.INVISIBLE) {
-                titleContent.dispatchTouchEvent(event);
-            }
-            return false;
-        });
+        if (titleContent != null) {
+            recyclerView.setOnTouchListener((v, event) -> {
+                if (progressView == null || progressView.getVisibility() == View.INVISIBLE) {
+                    titleContent.dispatchTouchEvent(event);
+                }
+                return false;
+            });
+        }
+    }
+
+    protected View getRootView() {
+        return rootView;
     }
 
     protected TF getTitleFragment() {
@@ -219,14 +232,31 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
 
     protected abstract void init(Bundle savedInstanceState);
 
-    protected abstract void initItems(List<RecyclerViewItem<VH>> items);
+    protected abstract void initItems(List<RecyclerViewItem> items);
 
-    protected void addItem(RecyclerViewItem<VH> item) {
+    protected void addItem(RecyclerViewItem item) {
         items.add(item);
         if (adapter != null) {
             adapter.notifyItemInserted(items.size() - 1);
         }
-        messageView.setVisibility(View.INVISIBLE);
+        if (messageView != null) {
+            messageView.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    protected void removeItem(RecyclerViewItem item) {
+        removeItem(items.indexOf(item));
+    }
+
+    protected void removeItem(int index) {
+        if (index < 0) return;
+        items.remove(index);
+        if (adapter != null) {
+            adapter.notifyItemRemoved(index);
+        }
+        if (messageView != null && itemsSize() == 0) {
+            messageView.setVisibility(View.VISIBLE);
+        }
     }
 
     protected void clearItems() {
@@ -234,7 +264,9 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         if (adapter != null) {
             adapter.notifyDataSetChanged();
         }
-        messageView.setVisibility(View.VISIBLE);
+        if (messageView != null) {
+            messageView.setVisibility(View.VISIBLE);
+        }
     }
 
     public void showProgress() {
@@ -242,9 +274,13 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
             synchronized (this) {
                 progressCount++;
                 recyclerView.setVisibility(View.INVISIBLE);
-                messageView.setVisibility(View.INVISIBLE);
+                if (messageView != null) {
+                    messageView.setVisibility(View.INVISIBLE);
+                }
                 progressView.setVisibility(View.VISIBLE);
-                titleContent.setVisibility(View.INVISIBLE);
+                if (titleContent != null) {
+                    titleContent.setVisibility(View.INVISIBLE);
+                }
             }
         }
     }
@@ -255,18 +291,22 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
                 progressCount--;
                 if (progressCount <= 0) {
                     recyclerView.setVisibility(View.VISIBLE);
-                    messageView.setVisibility(
-                            progressView.getVisibility() == View.INVISIBLE &&
-                                    itemsSize() == 0 ? View.VISIBLE : View.INVISIBLE);
+                    if (messageView != null) {
+                        messageView.setVisibility(
+                                progressView.getVisibility() == View.INVISIBLE &&
+                                        itemsSize() == 0 ? View.VISIBLE : View.INVISIBLE);
+                    }
                     progressView.setVisibility(View.INVISIBLE);
-                    titleContent.setVisibility(View.VISIBLE);
+                    if (titleContent != null) {
+                        titleContent.setVisibility(View.VISIBLE);
+                    }
                     progressCount = 0;
                 }
             }
         }
     }
 
-    protected List<RecyclerViewItem<VH>> getItems() {
+    protected List<RecyclerViewItem> getItems() {
         return items;
     }
 
@@ -278,7 +318,7 @@ public abstract class RecyclerViewFragment<VH extends RecyclerView.ViewHolder, T
         return recyclerView;
     }
 
-    protected RecyclerViewAdapter<VH> getRecyclerViewAdapter() {
+    protected RecyclerViewAdapter getRecyclerViewAdapter() {
         return adapter;
     }
 

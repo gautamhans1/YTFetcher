@@ -9,22 +9,16 @@ import com.grarak.ytfetcher.utils.server.youtube.Youtube;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeServer;
 import com.grarak.ytfetcher.views.recyclerview.MusicItem;
-import com.grarak.ytfetcher.views.recyclerview.RecyclerViewAdapter;
 import com.grarak.ytfetcher.views.recyclerview.RecyclerViewItem;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, AddFragment>
+public class SearchFragment extends RecyclerViewFragment<AddFragment>
         implements AddFragment.OnOpenListener, AddFragment.OnConfirmListener {
 
     private String title;
     private YoutubeServer server;
-
-    @Override
-    protected RecyclerViewAdapter<MusicItem.ViewHolder> createAdapter() {
-        return new MusicItem.MusicAdapter(getItems(), false);
-    }
 
     @Override
     protected LinearLayoutManager createLayoutManager() {
@@ -39,7 +33,7 @@ public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, A
     }
 
     @Override
-    protected void initItems(List<RecyclerViewItem<MusicItem.ViewHolder>> recyclerViewItems) {
+    protected void initItems(List<RecyclerViewItem> recyclerViewItems) {
     }
 
     @Override
@@ -60,8 +54,8 @@ public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, A
     public void onResume() {
         super.onResume();
 
-        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
-        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+        List<RecyclerViewItem> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem item : items) {
             ((MusicItem) item).setDownloaded();
         }
     }
@@ -70,8 +64,8 @@ public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, A
     protected void onDownloaded(YoutubeSearchResult result) {
         super.onDownloaded(result);
 
-        List<RecyclerViewItem<MusicItem.ViewHolder>> items = new ArrayList<>(getItems());
-        for (RecyclerViewItem<MusicItem.ViewHolder> item : items) {
+        List<RecyclerViewItem> items = new ArrayList<>(getItems());
+        for (RecyclerViewItem item : items) {
             MusicItem musicItem = (MusicItem) item;
             if (musicItem.result.equals(result)) {
                 musicItem.setDownloaded();
@@ -123,7 +117,7 @@ public class SearchFragment extends RecyclerViewFragment<MusicItem.ViewHolder, A
                         public void onDownload(MusicItem musicItem) {
                             queueDownload(result);
                         }
-                    }));
+                    }, false));
                 }
             }
 

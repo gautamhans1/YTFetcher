@@ -241,6 +241,9 @@ public class BaseFragment extends Fragment {
                 return false;
             }
         }
-        return result.getDownloadPath(getActivity()).delete();
+        return result.delete(getActivity());
+    }
+
+    public void onRemoveForeground() {
     }
 }

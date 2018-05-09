@@ -11,7 +11,7 @@ import android.widget.TextView;
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.server.playlist.Playlist;
 
-public class PlaylistItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
+public class PlaylistItem extends RecyclerViewItem {
 
     public interface PlaylistListener {
         void onClick(PlaylistItem item);
@@ -22,7 +22,7 @@ public class PlaylistItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
     }
 
     private SwitchCompat publicSwitch;
-    private final Playlist playlist;
+    public final Playlist playlist;
     private final PlaylistListener playlistListener;
 
     public PlaylistItem(Playlist playlist, PlaylistListener playlistListener) {
@@ -33,12 +33,6 @@ public class PlaylistItem extends RecyclerViewItem<RecyclerView.ViewHolder> {
     @Override
     protected int getLayoutXml() {
         return R.layout.item_playlist;
-    }
-
-    @Override
-    protected RecyclerView.ViewHolder createViewHolder(View inflatedView) {
-        return new RecyclerView.ViewHolder(inflatedView) {
-        };
     }
 
     private CompoundButton.OnCheckedChangeListener publicSwitchListener = new CompoundButton.OnCheckedChangeListener() {

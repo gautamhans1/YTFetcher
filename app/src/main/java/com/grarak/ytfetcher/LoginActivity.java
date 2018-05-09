@@ -40,7 +40,11 @@ public class LoginActivity extends BaseActivity {
         setContentView(R.layout.activity_login);
 
         serverView = findViewById(R.id.server_edit);
+        serverView.getTextInputEditText().setInputType(
+                InputType.TYPE_TEXT_VARIATION_FILTER);
         usernameView = findViewById(R.id.username_edit);
+        usernameView.getTextInputEditText().setInputType(
+                InputType.TYPE_TEXT_VARIATION_FILTER);
         passwordView = findViewById(R.id.password_edit);
         passwordView.getTextInputEditText().setInputType(
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);

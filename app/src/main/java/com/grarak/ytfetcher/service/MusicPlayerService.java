@@ -37,7 +37,6 @@ public class MusicPlayerService extends Service
     public static final String ACTION_MUSIC_PREVIOUS = NAME + ".ACTION.MUSIC_PREVIOUS";
     public static final String ACTION_MUSIC_NEXT = NAME + ".ACTION.MUSIC_NEXT";
 
-    private boolean isBound;
     private MusicPlayerBinder binder = new MusicPlayerBinder();
 
     private YoutubeServer server;
@@ -68,7 +67,10 @@ public class MusicPlayerService extends Service
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(ACTION_MUSIC_PLAYER_STOP)) {
-                if (!isBound()) {
+                stopForeground(true);
+                if (listener != null) {
+                    listener.onDisconnect();
+                } else {
                     stopSelf();
                 }
             } else if (intent.getAction().equals(ACTION_MUSIC_PLAY_PAUSE)) {
@@ -386,18 +388,14 @@ public class MusicPlayerService extends Service
     public void onDestroy() {
         super.onDestroy();
 
-        if (listener != null) {
-            listener.onDisconnect();
-        }
+        notification.stop();
 
-        server.close();
         exoPlayer.release();
+        server.close();
         unregisterReceiver(receiver);
 
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         am.abandonAudioFocus(this);
-
-        stopForeground(false);
     }
 
     public void setListener(MusicPlayerListener listener) {
@@ -407,20 +405,6 @@ public class MusicPlayerService extends Service
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         return START_STICKY;
-    }
-
-    public boolean isBound() {
-        return isBound;
-    }
-
-    public void onBind() {
-        isBound = true;
-        notification.refresh();
-    }
-
-    public void onUnbind() {
-        isBound = false;
-        notification.refresh();
     }
 
     @Nullable

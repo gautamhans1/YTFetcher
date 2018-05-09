@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
 
 import com.crashlytics.android.Crashlytics;
+import com.grarak.ytfetcher.utils.Settings;
 
 import io.fabric.sdk.android.Fabric;
 
@@ -16,8 +17,9 @@ public abstract class BaseActivity extends AppCompatActivity {
         if (!BuildConfig.DEBUG) {
             Fabric.with(this, new Crashlytics());
         }
-
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+        setTheme(Settings.isDarkTheme(this) ?
+                R.style.AppThemeDark : R.style.AppThemeLight);
         super.onCreate(savedInstanceState);
     }
 }

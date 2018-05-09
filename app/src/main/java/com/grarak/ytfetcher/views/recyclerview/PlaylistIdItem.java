@@ -15,13 +15,11 @@ import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
 
 import java.util.List;
 
-public class PlaylistIdItem extends RecyclerViewItem<PlaylistIdItem.ViewHolder> {
-
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-
-        private TextView title;
-        private View downloaded;
-        private AppCompatImageView menu;
+public class PlaylistIdItem extends RecyclerViewItem {
+    private static class ViewHolder extends RecyclerView.ViewHolder {
+        private final TextView title;
+        private final View downloaded;
+        private final AppCompatImageView menu;
 
         public ViewHolder(View itemView) {
             super(itemView);
@@ -45,45 +43,47 @@ public class PlaylistIdItem extends RecyclerViewItem<PlaylistIdItem.ViewHolder> 
         void onMoveDown(PlaylistIdItem item);
     }
 
-    public final YoutubeSearchResult result;
-    private final PlaylistLinkListener playlistLinkListener;
     private ViewHolder viewHolder;
 
+    public final YoutubeSearchResult result;
+    private final PlaylistLinkListener playlistLinkListener;
+    private final boolean readOnly;
+
     public PlaylistIdItem(YoutubeSearchResult result,
-                          PlaylistLinkListener playlistLinkListener) {
+                          PlaylistLinkListener playlistLinkListener,
+                          boolean readOnly) {
         this.result = result;
         this.playlistLinkListener = playlistLinkListener;
+        this.readOnly = readOnly;
     }
 
     @Override
     protected int getLayoutXml() {
-        return 0;
+        return R.layout.item_playlist_id;
     }
 
     @Override
-    protected ViewHolder createViewHolder(View inflatedView) {
-        return null;
-    }
-
-    @Override
-    protected void bindViewHolder(ViewHolder viewHolder) {
-        this.viewHolder = viewHolder;
-
-        viewHolder.title.setText(result.title);
+    protected void bindViewHolder(RecyclerView.ViewHolder viewHolder) {
+        this.viewHolder = (ViewHolder) viewHolder;
+        this.viewHolder.title.setText(result.title);
 
         viewHolder.itemView.setOnClickListener(v -> playlistLinkListener.onClick(this));
 
-        viewHolder.menu.setOnClickListener(v -> {
+        this.viewHolder.menu.setOnClickListener(v -> {
             PopupMenu popupMenu = new PopupMenu(v.getContext(), v);
             Menu menu = popupMenu.getMenu();
-            menu.add(0, 0, 0, R.string.remove_from_playlist);
-            if (viewHolder.downloaded.getVisibility() == View.VISIBLE) {
+            if (!readOnly) {
+                menu.add(0, 0, 0, R.string.remove_from_playlist);
+            }
+            if (this.viewHolder.downloaded.getVisibility() == View.VISIBLE) {
                 menu.add(0, 1, 0, R.string.delete);
             } else {
                 menu.add(0, 2, 0, R.string.download);
             }
-            menu.add(0, 3, 0, R.string.move_up);
-            menu.add(0, 4, 0, R.string.move_down);
+            if (!readOnly) {
+                menu.add(0, 3, 0, R.string.move_up);
+                menu.add(0, 4, 0, R.string.move_down);
+            }
             popupMenu.setOnMenuItemClickListener(item -> {
                 switch (item.getItemId()) {
                     case 0:
@@ -113,22 +113,23 @@ public class PlaylistIdItem extends RecyclerViewItem<PlaylistIdItem.ViewHolder> 
     public void setDownloaded() {
         if (viewHolder != null) {
             viewHolder.downloaded.setVisibility(result.getDownloadPath(
-                    viewHolder.itemView.getContext()).exists() ? View.VISIBLE : View.GONE);
+                    viewHolder.downloaded.getContext()).exists() ? View.VISIBLE : View.GONE);
         }
     }
 
-    public static class Adapter extends RecyclerViewAdapter<ViewHolder> {
+    public static class Adapter extends RecyclerViewAdapter {
 
-        public Adapter(List<RecyclerViewItem<ViewHolder>> recyclerViewItems) {
-            super(recyclerViewItems);
+        public Adapter(List<RecyclerViewItem> items) {
+            super(items);
         }
 
         @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int position) {
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             return new ViewHolder(LayoutInflater.from(
                     parent.getContext()).inflate(
-                    R.layout.item_playlist_id, parent, false));
+                    R.layout.item_playlist_id, parent, false)) {
+            };
         }
 
         @Override
@@ -136,5 +137,4 @@ public class PlaylistIdItem extends RecyclerViewItem<PlaylistIdItem.ViewHolder> 
             return 0;
         }
     }
-
 }

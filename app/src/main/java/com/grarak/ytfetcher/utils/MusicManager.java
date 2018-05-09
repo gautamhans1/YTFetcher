@@ -30,7 +30,6 @@ public class MusicManager {
                         (MusicPlayerService.MusicPlayerBinder) service;
                 MusicManager.this.service = binder.getService();
                 MusicManager.this.service.setListener(listener);
-                MusicManager.this.service.onBind();
                 listener.onConnect();
             }
         }
@@ -58,11 +57,23 @@ public class MusicManager {
     public void onPause() {
         synchronized (this) {
             if (service != null) {
-                service.onUnbind();
                 service.setListener(null);
             }
-            context.unbindService(serviceConnection);
+            try {
+                context.unbindService(serviceConnection);
+            } catch (IllegalArgumentException ignored) {
+            }
         }
+    }
+
+    public void destroy() {
+        onPause();
+        context.stopService(new Intent(context, MusicPlayerService.class));
+    }
+
+    public void restart() {
+        destroy();
+        onResume();
     }
 
     public void play(YoutubeSearchResult result) {

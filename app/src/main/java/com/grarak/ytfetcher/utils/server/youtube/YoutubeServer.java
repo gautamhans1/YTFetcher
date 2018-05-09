@@ -4,7 +4,6 @@ import android.content.Context;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.grarak.ytfetcher.utils.Log;
 import com.grarak.ytfetcher.utils.Settings;
 import com.grarak.ytfetcher.utils.server.Request;
 import com.grarak.ytfetcher.utils.server.Server;
@@ -42,8 +41,11 @@ public class YoutubeServer extends Server {
         void onFailure(int code);
     }
 
+    private final Context context;
+
     public YoutubeServer(Context context) {
         super(Settings.getServerUrl(context));
+        this.context = context;
     }
 
     public void fetchSong(Youtube youtube, YoutubeSongIdCallback youtubeSongIdCallback) {
@@ -182,6 +184,12 @@ public class YoutubeServer extends Server {
     }
 
     public void getInfo(Youtube youtube, YoutubeResultCallback youtubeResultCallback) {
+        YoutubeSearchResult result = YoutubeSearchResult.restore(youtube.id, context);
+        if (result != null) {
+            youtubeResultCallback.onSuccess(result);
+            return;
+        }
+
         post(getUrl("youtube/getinfo"), youtube.toString(), new Request.RequestCallback() {
             @Override
             public void onConnect(Request request, int status, String url) {

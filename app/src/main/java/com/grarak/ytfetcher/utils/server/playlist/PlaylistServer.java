@@ -17,14 +17,14 @@ import java.util.Map;
 
 public class PlaylistServer extends Server {
 
-    public interface PlaylistNameListCallback {
+    public interface PlaylistListCallback {
         void onSuccess(Playlists playlists);
 
         void onFailure(int code);
     }
 
-    public interface PlayListLinksCallback {
-        void onSuccess(List<String> links);
+    public interface PlayListIdsCallback {
+        void onSuccess(List<String> ids);
 
         void onFailure(int code);
     }
@@ -33,7 +33,7 @@ public class PlaylistServer extends Server {
         super(Settings.getServerUrl(context));
     }
 
-    public void list(String apiKey, PlaylistNameListCallback playlistNameListCallback) {
+    public void list(String apiKey, PlaylistListCallback playlistListCallback) {
         post(getUrl("users/playlist/list"),
                 String.format("{\"apikey\":\"%s\"}", apiKey), new Request.RequestCallback() {
                     @Override
@@ -44,17 +44,40 @@ public class PlaylistServer extends Server {
                     public void onSuccess(Request request, int status,
                                           Map<String, List<String>> headers, String response) {
                         if (status == HttpURLConnection.HTTP_OK) {
-                            playlistNameListCallback.onSuccess(new Playlists(response));
+                            playlistListCallback.onSuccess(new Playlists(response));
                         } else {
-                            playlistNameListCallback.onFailure(parseStatusCode(response));
+                            playlistListCallback.onFailure(parseStatusCode(response));
                         }
                     }
 
                     @Override
                     public void onFailure(Request request, Exception e) {
-                        playlistNameListCallback.onFailure(Status.ServerOffline);
+                        playlistListCallback.onFailure(Status.ServerOffline);
                     }
                 });
+    }
+
+    public void listPublic(Playlist playlist, PlaylistListCallback playlistListCallback) {
+        post(getUrl("users/playlist/listpublic"), playlist.toString(), new Request.RequestCallback() {
+            @Override
+            public void onConnect(Request request, int status, String url) {
+            }
+
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
+                if (status == HttpURLConnection.HTTP_OK) {
+                    playlistListCallback.onSuccess(new Playlists(response));
+                } else {
+                    playlistListCallback.onFailure(parseStatusCode(response));
+                }
+            }
+
+            @Override
+            public void onFailure(Request request, Exception e) {
+                playlistListCallback.onFailure(Status.ServerOffline);
+            }
+        });
     }
 
     public void create(Playlist playlist, GenericCallback genericCallback) {
@@ -172,7 +195,7 @@ public class PlaylistServer extends Server {
         });
     }
 
-    public void listPlaylistIds(Playlist playlist, PlayListLinksCallback playListLinksCallback) {
+    public void listPlaylistIds(Playlist playlist, PlayListIdsCallback playListIdsCallback) {
         post(getUrl("users/playlist/listids"), playlist.toString(), new Request.RequestCallback() {
             @Override
             public void onConnect(Request request, int status, String url) {
@@ -185,15 +208,41 @@ public class PlaylistServer extends Server {
                     Type listType = new TypeToken<List<String>>() {
                     }.getType();
                     List<String> results = new GsonBuilder().create().fromJson(response, listType);
-                    playListLinksCallback.onSuccess(results);
+                    playListIdsCallback.onSuccess(results);
                 } else {
-                    playListLinksCallback.onFailure(parseStatusCode(response));
+                    playListIdsCallback.onFailure(parseStatusCode(response));
                 }
             }
 
             @Override
             public void onFailure(Request request, Exception e) {
-                playListLinksCallback.onFailure(Status.ServerOffline);
+                playListIdsCallback.onFailure(Status.ServerOffline);
+            }
+        });
+    }
+
+    public void listPlaylistIdsPublic(PlaylistPublic playlistPublic, PlayListIdsCallback playListIdsCallback) {
+        post(getUrl("users/playlist/listidspublic"), playlistPublic.toString(), new Request.RequestCallback() {
+            @Override
+            public void onConnect(Request request, int status, String url) {
+            }
+
+            @Override
+            public void onSuccess(Request request, int status,
+                                  Map<String, List<String>> headers, String response) {
+                if (status == HttpURLConnection.HTTP_OK) {
+                    Type listType = new TypeToken<List<String>>() {
+                    }.getType();
+                    List<String> results = new GsonBuilder().create().fromJson(response, listType);
+                    playListIdsCallback.onSuccess(results);
+                } else {
+                    playListIdsCallback.onFailure(parseStatusCode(response));
+                }
+            }
+
+            @Override
+            public void onFailure(Request request, Exception e) {
+                playListIdsCallback.onFailure(Status.ServerOffline);
             }
         });
     }

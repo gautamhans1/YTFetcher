@@ -170,6 +170,12 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
                 .setCustomAnimations(R.anim.right_in, R.anim.right_out)
                 .remove(fragment)
                 .commit();
+
+        for (Fragment f : getSupportFragmentManager().getFragments()) {
+            if (f instanceof BaseFragment) {
+                ((BaseFragment) f).onRemoveForeground();
+            }
+        }
     }
 
     @Override
@@ -295,6 +301,8 @@ public class MainActivity extends BaseActivity implements MusicPlayerListener {
         musicPlayerView.onNoMusic();
         slidingUpPanelLayout.setTouchEnabled(false);
         slidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+
+        musicManager.restart();
     }
 
     private static class ViewPagerAdapter extends FragmentStatePagerAdapter {

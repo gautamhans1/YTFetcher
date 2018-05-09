@@ -62,7 +62,6 @@ public class MusicPlayerNotification {
                 new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
                         .setContentTitle(service.getString(R.string.loading))
                         .setContentText(result.title)
-                        .setOngoing(true)
                         .setSmallIcon(R.drawable.ic_bookmark_music)
                         .setProgress(0, 0, true);
 
@@ -86,7 +85,8 @@ public class MusicPlayerNotification {
                         .setContentIntent(contentIntent)
                         .setSmallIcon(R.drawable.ic_bookmark_music);
 
-        service.startForeground(NOTIFICATION_ID, builder.build());
+        manager.notify(NOTIFICATION_ID, builder.build());
+        service.stopForeground(false);
     }
 
     void showPlay(YoutubeSearchResult result) {
@@ -95,8 +95,7 @@ public class MusicPlayerNotification {
         this.result = result;
         new Thread(() -> {
             NotificationCompat.Builder builder = baseBuilder(result,
-                    playingBitmap = getBitmap(result.thumbnail), true)
-                    .setOngoing(true);
+                    playingBitmap = getBitmap(result.thumbnail), true);
 
             service.startForeground(NOTIFICATION_ID, builder.build());
         }).start();
@@ -115,14 +114,8 @@ public class MusicPlayerNotification {
         }).start();
     }
 
-    void refresh() {
-        if (playing.get()) {
-            showPlay(result);
-        } else if (fetching.get()) {
-            showProgress(result);
-        } else {
-            showPause();
-        }
+    void stop() {
+        manager.cancel(NOTIFICATION_ID);
     }
 
     private NotificationCompat.Builder baseBuilder(
@@ -144,11 +137,9 @@ public class MusicPlayerNotification {
             }
         }
 
-        boolean isBound = service.isBound();
-
         android.support.v4.media.app.NotificationCompat.MediaStyle mediaStyle =
                 new android.support.v4.media.app.NotificationCompat.DecoratedMediaCustomViewStyle();
-        mediaStyle.setShowActionsInCompactView(2 - (isBound ? 1 : 0));
+        mediaStyle.setShowActionsInCompactView(2);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(service, NOTIFICATION_CHANNEL)
                 .setContentTitle(title)
@@ -158,10 +149,6 @@ public class MusicPlayerNotification {
                 .setLargeIcon(bitmap)
                 .setContentIntent(contentIntent)
                 .addAction(new NotificationCompat.Action(
-                        R.drawable.ic_skip_previous,
-                        service.getString(R.string.previous),
-                        getBroadcast(MusicPlayerService.ACTION_MUSIC_PREVIOUS)))
-                .addAction(new NotificationCompat.Action(
                         play ? R.drawable.ic_pause : R.drawable.ic_play,
                         service.getString(play ? R.string.pause : R.string.play),
                         getBroadcast(MusicPlayerService.ACTION_MUSIC_PLAY_PAUSE)))
@@ -169,16 +156,13 @@ public class MusicPlayerNotification {
                         R.drawable.ic_skip_next,
                         service.getString(R.string.next),
                         getBroadcast(MusicPlayerService.ACTION_MUSIC_NEXT)))
+                .addAction(new NotificationCompat.Action(
+                        R.drawable.ic_stop,
+                        service.getString(R.string.stop),
+                        getBroadcast(MusicPlayerService.ACTION_MUSIC_PLAYER_STOP)))
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setStyle(mediaStyle);
-
-        if (!isBound) {
-            builder.addAction(new NotificationCompat.Action(
-                    R.drawable.ic_stop,
-                    service.getString(R.string.stop),
-                    getBroadcast(MusicPlayerService.ACTION_MUSIC_PLAYER_STOP)));
-        }
         return builder;
     }
 
@@ -187,8 +171,11 @@ public class MusicPlayerNotification {
         if (manager.getNotificationChannel(NOTIFICATION_CHANNEL) != null) {
             return;
         }
-        manager.createNotificationChannel(new NotificationChannel(
+        NotificationChannel channel = new NotificationChannel(
                 NOTIFICATION_CHANNEL, service.getString(R.string.music_player),
-                NotificationManager.IMPORTANCE_DEFAULT));
+                NotificationManager.IMPORTANCE_LOW);
+        channel.setSound(null, null);
+
+        manager.createNotificationChannel(channel);
     }
 }

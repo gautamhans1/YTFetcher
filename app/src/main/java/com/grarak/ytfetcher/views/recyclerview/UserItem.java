@@ -1,82 +1,70 @@
 package com.grarak.ytfetcher.views.recyclerview;
 
-import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SwitchCompat;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.grarak.ytfetcher.R;
 import com.grarak.ytfetcher.utils.server.user.User;
 
-import java.util.List;
+public class UserItem extends RecyclerViewItem {
 
-public class UserItem extends RecyclerViewItem<UserItem.ViewHolder> {
+    public interface UserListener {
+        void onClick(UserItem item);
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        private TextView title;
-        private View admin;
-        private SwitchCompat verifiedSwitch;
-
-        private ViewHolder(View item) {
-            super(item);
-            title = item.findViewById(R.id.title);
-            admin = item.findViewById(R.id.admin_view);
-            verifiedSwitch = item.findViewById(R.id.verified);
-        }
+        void onVerified(UserItem item, boolean verified);
     }
 
-    private boolean isAdmin;
-    private User user;
-    private CompoundButton.OnCheckedChangeListener onCheckedChangeListener;
+    private final boolean isAdmin;
+    private final User user;
+    private final UserListener userListener;
+    private SwitchCompat verifiedSwitch;
 
     public UserItem(boolean isAdmin,
                     User user,
-                    CompoundButton.OnCheckedChangeListener onCheckedChangeListener) {
+                    UserListener userListener) {
         this.isAdmin = isAdmin;
         this.user = user;
-        this.onCheckedChangeListener = onCheckedChangeListener;
+        this.userListener = userListener;
     }
 
     @Override
     protected int getLayoutXml() {
-        return 0;
+        return R.layout.item_user;
     }
 
-    @Override
-    protected ViewHolder createViewHolder(View inflatedView) {
-        return null;
-    }
+    private CompoundButton.OnCheckedChangeListener verifiedSwitchListener = new CompoundButton.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            userListener.onVerified(UserItem.this, isChecked);
+        }
+    };
 
     @Override
-    protected void bindViewHolder(ViewHolder viewHolder) {
-        viewHolder.title.setText(user.name);
-        viewHolder.admin.setVisibility(user.admin ? View.VISIBLE : View.GONE);
-        viewHolder.verifiedSwitch.setChecked(user.verified);
+    protected void bindViewHolder(RecyclerView.ViewHolder viewHolder) {
+        TextView title = viewHolder.itemView.findViewById(R.id.title);
+        View admin = viewHolder.itemView.findViewById(R.id.admin_view);
+        verifiedSwitch = viewHolder.itemView.findViewById(R.id.verified);
+
+        title.setText(user.name);
+        admin.setVisibility(user.admin ? View.VISIBLE : View.GONE);
+        verifiedSwitch.setChecked(user.verified);
+
+        viewHolder.itemView.setOnClickListener(v -> userListener.onClick(this));
 
         if (isAdmin && !user.admin) {
-            viewHolder.verifiedSwitch.setVisibility(View.VISIBLE);
-            viewHolder.verifiedSwitch.setOnCheckedChangeListener(onCheckedChangeListener);
+            verifiedSwitch.setVisibility(View.VISIBLE);
+            verifiedSwitch.setOnCheckedChangeListener(verifiedSwitchListener);
         } else {
-            viewHolder.verifiedSwitch.setVisibility(View.INVISIBLE);
+            verifiedSwitch.setVisibility(View.INVISIBLE);
         }
     }
 
-    public static class UserAdapter extends RecyclerViewAdapter<ViewHolder> {
-
-        public UserAdapter(List<RecyclerViewItem<ViewHolder>> recyclerViewItems) {
-            super(recyclerViewItems);
-        }
-
-        @NonNull
-        @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int position) {
-            return new ViewHolder(
-                    LayoutInflater.from(parent.getContext()).inflate(
-                            R.layout.item_user, parent, false));
-        }
+    public void setVerified(boolean verified) {
+        verifiedSwitch.setOnCheckedChangeListener(null);
+        verifiedSwitch.setChecked(verified);
+        verifiedSwitch.setOnCheckedChangeListener(verifiedSwitchListener);
     }
 }

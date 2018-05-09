@@ -2,14 +2,11 @@ package com.grarak.ytfetcher.views.recyclerview;
 
 import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
-import android.view.View;
 
-public abstract class RecyclerViewItem<VH extends RecyclerView.ViewHolder> {
+public abstract class RecyclerViewItem {
 
-    protected abstract @LayoutRes
-    int getLayoutXml();
+    @LayoutRes
+    protected abstract int getLayoutXml();
 
-    protected abstract VH createViewHolder(View inflatedView);
-
-    protected abstract void bindViewHolder(VH viewHolder);
+    protected abstract void bindViewHolder(RecyclerView.ViewHolder viewHolder);
 }

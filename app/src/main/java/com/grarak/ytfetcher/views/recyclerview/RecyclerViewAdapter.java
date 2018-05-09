@@ -7,25 +7,24 @@ import android.view.ViewGroup;
 
 import java.util.List;
 
-public class RecyclerViewAdapter<VH extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<VH> {
+public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private List<RecyclerViewItem<VH>> items;
+    private final List<RecyclerViewItem> items;
 
-    public RecyclerViewAdapter(List<RecyclerViewItem<VH>> items) {
+    public RecyclerViewAdapter(List<RecyclerViewItem> items) {
         this.items = items;
     }
 
     @NonNull
     @Override
-    public VH onCreateViewHolder(@NonNull ViewGroup parent, int position) {
-        RecyclerViewItem<VH> item = items.get(position);
-        return item.createViewHolder(
-                LayoutInflater.from(parent.getContext()).inflate(
-                        item.getLayoutXml(), parent, false));
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        return new RecyclerView.ViewHolder(LayoutInflater.from(parent.getContext()).inflate(
+                viewType, parent, false)) {
+        };
     }
 
     @Override
-    public void onBindViewHolder(@NonNull VH holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         items.get(position).bindViewHolder(holder);
     }
 
@@ -36,6 +35,6 @@ public class RecyclerViewAdapter<VH extends RecyclerView.ViewHolder> extends Rec
 
     @Override
     public int getItemViewType(int position) {
-        return position;
+        return items.get(position).getLayoutXml();
     }
 }
