@@ -94,7 +94,9 @@ public class Request implements Closeable {
                 handler.post(() -> requestCallback.onFailure(this, e));
             }
         } finally {
-            connection.disconnect();
+            if (connection != null) {
+                connection.disconnect();
+            }
 
             if (outputStream != null) {
                 try {

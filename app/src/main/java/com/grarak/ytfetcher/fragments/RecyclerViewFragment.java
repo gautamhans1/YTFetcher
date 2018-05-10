@@ -183,9 +183,9 @@ public abstract class RecyclerViewFragment<TF extends BaseFragment>
     public void onViewFinished() {
         int leftPadding = recyclerView.getPaddingLeft();
         int rightPadding = recyclerView.getPaddingRight();
-        if (recyclerView.getPaddingBottom() != 0
-                && Utils.isLandscape(getActivity())) {
-            leftPadding = getResources().getDimensionPixelSize(R.dimen.recyclerview_padding);
+        if (Utils.isLandscape(getActivity())) {
+            leftPadding = getResources().getDimensionPixelSize(
+                    R.dimen.recyclerview_padding);
             rightPadding = leftPadding;
         }
 

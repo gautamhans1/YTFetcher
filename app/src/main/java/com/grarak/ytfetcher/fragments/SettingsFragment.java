@@ -45,6 +45,11 @@ public class SettingsFragment extends RecyclerViewFragment<TitleFragment> {
         downloads.setText(getString(R.string.downloads));
         recyclerViewItems.add(downloads);
 
+        ButtonItem history = new ButtonItem(
+                v -> showForegroundFragment(HistoryFragment.newInstance(getUser())));
+        history.setText(getString(R.string.history));
+        recyclerViewItems.add(history);
+
         SwitchItem darkTheme = new SwitchItem(checked -> {
             Settings.setDarkTheme(checked, getActivity());
             Intent intent = new Intent(getActivity(), LoginActivity.class);

@@ -16,7 +16,10 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.grarak.ytfetcher.utils.ExoPlayerWrapper;
+import com.grarak.ytfetcher.utils.server.GenericCallback;
 import com.grarak.ytfetcher.utils.server.Status;
+import com.grarak.ytfetcher.utils.server.history.History;
+import com.grarak.ytfetcher.utils.server.history.HistoryServer;
 import com.grarak.ytfetcher.utils.server.user.User;
 import com.grarak.ytfetcher.utils.server.youtube.Youtube;
 import com.grarak.ytfetcher.utils.server.youtube.YoutubeSearchResult;
@@ -39,7 +42,8 @@ public class MusicPlayerService extends Service
 
     private MusicPlayerBinder binder = new MusicPlayerBinder();
 
-    private YoutubeServer server;
+    private YoutubeServer youtubeServer;
+    private HistoryServer historyServer;
     private ExoPlayerWrapper exoPlayer;
     private MusicPlayerNotification notification;
     private MusicPlayerListener listener;
@@ -111,7 +115,7 @@ public class MusicPlayerService extends Service
 
     public synchronized void playMusic(User user, List<YoutubeSearchResult> results, int position) {
         pauseMusic();
-        server.close();
+        youtubeServer.close();
 
         synchronized (trackLock) {
             this.user = user;
@@ -133,6 +137,19 @@ public class MusicPlayerService extends Service
 
         File file = result.getDownloadPath(this);
         if (file.exists()) {
+            History history = new History();
+            history.apikey = user.apikey;
+            history.id = result.id;
+            historyServer.add(history, new GenericCallback() {
+                @Override
+                public void onSuccess() {
+                }
+
+                @Override
+                public void onFailure(int code) {
+                }
+            });
+
             exoPlayer.setFile(file);
             exoPlayer.setOnPreparedListener(exoPlayer -> {
                 synchronized (trackLock) {
@@ -148,7 +165,7 @@ public class MusicPlayerService extends Service
         youtube.apikey = user.apikey;
         youtube.id = result.id;
         youtube.addhistory = true;
-        server.fetchSong(youtube, new YoutubeServer.YoutubeSongIdCallback() {
+        youtubeServer.fetchSong(youtube, new YoutubeServer.YoutubeSongIdCallback() {
             @Override
             public void onSuccess(String url) {
                 exoPlayer.setUrl(url);
@@ -355,7 +372,8 @@ public class MusicPlayerService extends Service
     public void onCreate() {
         super.onCreate();
 
-        server = new YoutubeServer(this);
+        youtubeServer = new YoutubeServer(this);
+        historyServer = new HistoryServer(this);
 
         exoPlayer = new ExoPlayerWrapper(this);
         exoPlayer.setOnCompletionListener(this);
@@ -391,7 +409,8 @@ public class MusicPlayerService extends Service
         notification.stop();
 
         exoPlayer.release();
-        server.close();
+        youtubeServer.close();
+        historyServer.close();
         unregisterReceiver(receiver);
 
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
