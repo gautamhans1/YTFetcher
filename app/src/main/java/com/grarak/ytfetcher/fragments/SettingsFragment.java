@@ -60,6 +60,11 @@ public class SettingsFragment extends RecyclerViewFragment<TitleFragment> {
         signout.setTextColor(Color.WHITE);
         signout.setBackgroundColor(Color.RED);
         recyclerViewItems.add(signout);
+
+        ButtonItem licenses = new ButtonItem(
+                v -> showForegroundFragment(new LicenseFragment()));
+        licenses.setText(getString(R.string.licenses));
+        recyclerViewItems.add(licenses);
     }
 
     private void signoutDialog() {
