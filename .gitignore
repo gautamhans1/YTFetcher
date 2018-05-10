@@ -5,6 +5,7 @@
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/caches
+/.idea/markdown-navigator*
 .DS_Store
 /build
 /captures
